@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🧮 AbaKids – AI Magic Abacus Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --purple:#7c3aed; --purple-l:#a855f7; --purple-xl:#ede9fe;
+  --green:#22c55e; --red:#f43f5e; --amber:#f59e0b;
+  --sky:#0ea5e9; --bg:#fef9f0; --text:#1e1b4b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);min-height:100vh;overflow-x:hidden;color:var(--text);}
+
+.bg-scene{position:fixed;inset:0;z-index:0;overflow:hidden;
+  background:linear-gradient(180deg,#bfdbfe 0%,#e0f2fe 40%,#fef9c3 70%,#dcfce7 100%);}
+.cloud{position:absolute;border-radius:50px;background:rgba(255,255,255,0.85);animation:drift linear infinite;}
+@keyframes drift{from{transform:translateX(-200px)}to{transform:translateX(110vw)}}
+.floaty{position:absolute;font-size:20px;animation:twinkle 2s ease-in-out infinite;}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(1)}50%{opacity:1;transform:scale(1.3)}}
+
+#app{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:10px;}
+header{text-align:center;padding:14px 10px 4px;animation:bounceIn .8s cubic-bezier(.36,2,.6,.9);}
+@keyframes bounceIn{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}
+header h1{font-family:'Fredoka One',cursive;font-size:clamp(1.8rem,4vw,2.9rem);color:var(--purple);
+  text-shadow:3px 3px 0 #c4b5fd,6px 6px 0 rgba(0,0,0,.1);letter-spacing:2px;}
+header p{font-size:.9rem;color:#6d28d9;font-weight:700;margin-top:2px;}
+.ai-badge{display:inline-flex;align-items:center;gap:5px;
+  background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;
+  border-radius:50px;padding:3px 14px;font-size:.72rem;font-weight:800;margin-top:4px;letter-spacing:1px;}
+
+.main-wrap{display:flex;gap:14px;width:100%;max-width:1220px;flex-wrap:wrap;justify-content:center;margin-top:8px;}
+
+/* LEFT PANEL */
+.tutor-panel{background:linear-gradient(160deg,#6d28d9,#a855f7);border-radius:24px;padding:14px;
+  width:265px;flex-shrink:0;box-shadow:0 8px 32px rgba(124,58,237,.45);display:flex;flex-direction:column;gap:10px;
+  animation:slideLeft .6s ease;}
+@keyframes slideLeft{from{transform:translateX(-60px);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.mascot-box{background:rgba(255,255,255,.15);border-radius:16px;padding:10px;text-align:center;}
+.mascot{font-size:62px;display:block;animation:mascotBob 2s ease-in-out infinite;filter:drop-shadow(0 4px 8px rgba(0,0,0,.2));}
+@keyframes mascotBob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-10px) rotate(3deg)}}
+.mascot-name{font-family:'Fredoka One',cursive;color:#fff;font-size:1.15rem;margin-top:2px;}
+.ai-pill{background:rgba(255,255,255,.25);border-radius:50px;padding:2px 10px;font-size:.68rem;
+  color:#fff;font-weight:700;margin-top:2px;display:inline-block;}
+
+#tutor-speech{background:#fff;border-radius:16px;padding:12px 14px;font-size:.88rem;color:var(--text);
+  font-weight:600;min-height:88px;line-height:1.55;position:relative;box-shadow:0 4px 12px rgba(0,0,0,.1);overflow:hidden;}
+#tutor-speech::before{content:'';position:absolute;top:-10px;left:28px;
+  border:10px solid transparent;border-bottom-color:#fff;border-top:0;}
+.stream-cursor{display:inline-block;width:2px;height:1em;background:var(--purple);
+  animation:blink .6s step-end infinite;vertical-align:text-bottom;margin-left:2px;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.typing-dots span{display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:var(--purple-l);margin:0 2px;animation:dot 1.2s ease-in-out infinite;}
+.typing-dots span:nth-child(2){animation-delay:.2s}.typing-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,80%,100%{transform:scale(.6);opacity:.5}40%{transform:scale(1.2);opacity:1}}
+
+.lesson-nav{display:flex;flex-direction:column;gap:5px;}
+.lesson-btn{background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.35);color:#fff;
+  border-radius:12px;padding:8px 11px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.83rem;
+  cursor:pointer;transition:all .2s;text-align:left;display:flex;align-items:center;gap:6px;}
+.lesson-btn:hover{background:rgba(255,255,255,.35);transform:translateX(4px);}
+.lesson-btn.active{background:#fff;color:var(--purple);}
+.lesson-btn.locked{opacity:.65;cursor:not-allowed;filter:grayscale(.2);}
+.lesson-btn.locked:hover{transform:none;background:rgba(255,255,255,.2);}
+
+.chat-wrap{display:flex;gap:5px;}
+.chat-input{flex:1;border:2px solid rgba(255,255,255,.45);background:rgba(255,255,255,.18);color:#fff;
+  border-radius:12px;padding:8px 10px;font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:600;outline:none;}
+.chat-input::placeholder{color:rgba(255,255,255,.65);}
+.chat-input:focus{border-color:#fff;}
+.chat-send{background:#fff;color:var(--purple);border:none;border-radius:12px;padding:8px 11px;
+  font-size:1rem;cursor:pointer;transition:all .2s;font-weight:800;}
+.chat-send:hover{transform:scale(1.1);}
+.chat-send:disabled{opacity:.5;cursor:not-allowed;}
+
+.score-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;}
+.score-lbl{font-family:'Fredoka One',cursive;font-size:.95rem;color:#fff;}
+.sound-btn{background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);color:#fff;
+  border-radius:10px;padding:6px 10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:.78rem;
+  cursor:pointer;transition:all .2s;width:100%;display:flex;align-items:center;justify-content:center;gap:5px;}
+.sound-btn:hover{background:rgba(255,255,255,.32);}
+
+.prog-bar{height:9px;background:rgba(255,255,255,.2);border-radius:5px;overflow:hidden;}
+.prog-fill{height:100%;background:linear-gradient(90deg,#fbbf24,#f59e0b);border-radius:5px;transition:width .5s;}
+.journey-lbl{display:block;text-align:center;font-size:.72rem;color:#fef3c7;font-weight:800;margin-top:3px;letter-spacing:.4px;}
+.helper-row{display:flex;gap:6px;flex-wrap:wrap;}
+.mini-btn{flex:1;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);color:#fff;border-radius:10px;padding:6px 8px;font-family:'Nunito',sans-serif;font-weight:800;font-size:.74rem;cursor:pointer;transition:all .2s;}
+.mini-btn:hover{background:rgba(255,255,255,.32);}
+.mini-btn.active{background:#fff;color:var(--purple);}
+.badge-row{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;background:rgba(255,255,255,.12);border-radius:10px;padding:6px 8px;min-height:36px;}
+.badge-chip{background:rgba(255,255,255,.26);border:1px solid rgba(255,255,255,.45);color:#fff;border-radius:999px;padding:2px 8px;font-size:.68rem;font-weight:800;white-space:nowrap;}
+.badge-chip.new{animation:popIn .4s cubic-bezier(.36,2,.6,.9);}
+.demo-note{margin-top:4px;text-align:center;font-size:.68rem;font-weight:800;color:#fde68a;min-height:16px;}
+
+/* AVATAR */
+.avatar-row{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;margin-top:6px;}
+.avatar-btn{font-size:20px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);
+  border-radius:50%;width:34px;height:34px;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+.avatar-btn:hover{transform:scale(1.18);background:rgba(255,255,255,.32);}
+.avatar-btn.active{background:#fff;border-color:#fbbf24;
+  box-shadow:0 0 12px rgba(251,191,36,.7);transform:scale(1.1);}
+.avatar-card{margin-top:7px;background:rgba(255,255,255,.18);border:2px solid rgba(255,255,255,.35);border-radius:11px;padding:7px 9px;text-align:left;}
+.avatar-card .nm{font-size:.76rem;color:#fef3c7;font-weight:900;letter-spacing:.3px;}
+.avatar-card .cp{font-size:.73rem;color:#fff;font-weight:700;line-height:1.4;margin-top:2px;}
+.avatar-card .pw{font-size:.69rem;color:#e0e7ff;font-weight:800;margin-top:2px;}
+.mascot.talking{animation:talkBob .35s ease-in-out infinite!important;
+  filter:drop-shadow(0 4px 12px rgba(251,191,36,.6))!important;}
+@keyframes talkBob{
+  0%,100%{transform:translateY(0) rotate(-3deg) scale(1);}
+  50%{transform:translateY(-7px) rotate(3deg) scale(1.06);}
+}
+
+/* RIGHT / ABACUS */
+.abacus-area{flex:1;min-width:320px;display:flex;flex-direction:column;align-items:center;gap:11px;}
+.mode-tabs{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;}
+.mode-tab{padding:6px 14px;border-radius:50px;border:none;font-family:'Fredoka One',cursive;
+  font-size:.9rem;cursor:pointer;transition:all .2s;box-shadow:0 3px 8px rgba(0,0,0,.14);}
+.mode-tab.rep{background:#bae6fd;color:#0369a1;}
+.mode-tab.add{background:#bbf7d0;color:#15803d;}
+.mode-tab.sub{background:#fecaca;color:#dc2626;}
+.mode-tab.mul{background:#fde68a;color:#b45309;}
+.mode-tab.div{background:#ddd6fe;color:var(--purple);}
+.mode-tab.active,.mode-tab:hover{transform:scale(1.08) translateY(-2px);filter:brightness(.9);}
+.mode-tab.locked{opacity:.55;cursor:not-allowed;filter:grayscale(.25);}
+.mode-tab.locked:hover{transform:none;filter:none;}
+
+.val-bar{background:#fff;border-radius:20px;padding:9px 18px;box-shadow:0 6px 20px rgba(0,0,0,.1);
+  display:flex;gap:16px;flex-wrap:wrap;justify-content:center;align-items:center;}
+.val-item{display:flex;flex-direction:column;align-items:center;}
+.val-lbl{font-size:.62rem;font-weight:700;color:var(--purple);text-transform:uppercase;
+  letter-spacing:1px;font-family:'Nunito',sans-serif;}
+.val-num{font-size:1.7rem;font-family:'Fredoka One',cursive;color:var(--text);}
+.val-num.pop{animation:valPop .32s cubic-bezier(.36,2,.6,.9);}
+@keyframes valPop{
+  0%{transform:scale(1);}
+  50%{transform:scale(1.22);color:#7c3aed;}
+  100%{transform:scale(1);}
+}
+.val-divider{width:1px;height:38px;background:#e9d5ff;}
+
+/* ABACUS */
+.abacus-frame{background:linear-gradient(135deg,#fef3c7,#fde68a);border:6px solid #d97706;
+  border-radius:20px;padding:10px;box-shadow:0 10px 36px rgba(217,119,6,.3),inset 0 2px 4px rgba(255,255,255,.5);
+  overflow-x:auto;}
+.abacus-inner{display:flex;flex-direction:column;min-width:max-content;}
+.rod-labels{display:flex;align-items:center;gap:2px;padding:0 8px;margin-bottom:3px;}
+.rod-label{width:40px;text-align:center;font-family:'Fredoka One',cursive;font-size:.58rem;color:#92400e;}
+.rod-label.focus{color:#4c1d95;text-shadow:0 0 8px rgba(167,139,250,.8);}
+.lbl-spacer{width:20px;}
+.heaven-sec{background:rgba(253,230,138,.5);border-radius:10px 10px 0 0;padding:5px 8px 6px;
+  border-bottom:5px solid var(--purple);display:flex;align-items:flex-start;gap:2px;}
+.earth-sec{background:rgba(191,219,254,.5);border-radius:0 0 10px 10px;padding:6px 8px 5px;
+  display:flex;align-items:flex-end;gap:2px;}
+.sec-lbl{font-family:'Fredoka One',cursive;font-size:.65rem;writing-mode:vertical-lr;
+  padding:3px;border-radius:6px;align-self:center;min-width:18px;text-align:center;}
+.sec-lbl.h{color:#b45309;background:rgba(251,191,36,.3);}
+.sec-lbl.e{color:#1d4ed8;background:rgba(147,197,253,.4);}
+.rod-col{display:flex;flex-direction:column;align-items:center;gap:2px;width:40px;}
+.rod-col.focus{
+  background:rgba(196,181,253,.35);
+  border-radius:10px;
+  box-shadow:0 0 0 2px rgba(139,92,246,.45) inset,0 0 14px rgba(139,92,246,.28);
+}
+.rod-col.trade{
+  animation:tradeShimmer 1s ease-in-out infinite;
+}
+@keyframes tradeShimmer{
+  0%,100%{box-shadow:0 0 0 2px rgba(139,92,246,.45) inset,0 0 12px rgba(139,92,246,.25);}
+  50%{box-shadow:0 0 0 2px rgba(251,191,36,.78) inset,0 0 18px rgba(251,191,36,.58);}
+}
+.bead{width:33px;height:19px;border-radius:50%;cursor:pointer;user-select:none;touch-action:manipulation;
+  transition:transform .2s cubic-bezier(.36,2,.6,.9),box-shadow .25s ease,background .25s ease;
+  box-shadow:0 3px 6px rgba(0,0,0,.2),inset 0 1px 3px rgba(255,255,255,.5);}
+.bead:hover{transform:scale(1.16);z-index:10;}
+.bead:active{transform:scale(.93);}
+.bead.hb{background:linear-gradient(135deg,#fcd34d,#f59e0b,#d97706);}
+.bead.eb{background:linear-gradient(135deg,#93c5fd,#3b82f6,#1d4ed8);}
+.bead.hb.on{background:linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);
+  box-shadow:0 3px 12px rgba(239,68,68,.6),inset 0 1px 3px rgba(255,255,255,.4);
+  animation:beadGlowRed 1.25s ease-in-out infinite;}
+.bead.eb.on{background:linear-gradient(135deg,#4ade80,#22c55e,#15803d);
+  box-shadow:0 3px 12px rgba(34,197,94,.6),inset 0 1px 3px rgba(255,255,255,.4);
+  animation:beadGlowGreen 1.25s ease-in-out infinite;}
+@keyframes beadGlowRed{
+  0%,100%{box-shadow:0 3px 10px rgba(239,68,68,.48),inset 0 1px 3px rgba(255,255,255,.35);}
+  50%{box-shadow:0 4px 16px rgba(239,68,68,.78),0 0 10px rgba(252,165,165,.7),inset 0 1px 3px rgba(255,255,255,.45);}
+}
+@keyframes beadGlowGreen{
+  0%,100%{box-shadow:0 3px 10px rgba(34,197,94,.45),inset 0 1px 3px rgba(255,255,255,.35);}
+  50%{box-shadow:0 4px 16px rgba(34,197,94,.75),0 0 10px rgba(134,239,172,.68),inset 0 1px 3px rgba(255,255,255,.45);}
+}
+
+/* PRACTICE */
+.practice-area{background:#fff;border-radius:20px;padding:13px;
+  box-shadow:0 6px 20px rgba(0,0,0,.08);width:100%;max-width:670px;}
+.prac-title{font-family:'Fredoka One',cursive;font-size:1.2rem;color:var(--purple);
+  margin-bottom:8px;text-align:center;}
+.quiz-box{background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:14px;padding:13px;
+  text-align:center;border:2px dashed #c4b5fd;}
+.quiz-q{font-family:'Fredoka One',cursive;font-size:1.8rem;color:var(--text);margin-bottom:8px;}
+.quiz-sub{font-size:.87rem;color:#6d28d9;margin-bottom:8px;font-weight:700;}
+.quiz-input{border:3px solid #c4b5fd;border-radius:12px;padding:6px 12px;
+  font-family:'Fredoka One',cursive;font-size:1.3rem;width:120px;text-align:center;
+  outline:none;background:#fff;color:var(--text);}
+.quiz-input:focus{border-color:var(--purple);box-shadow:0 0 0 3px rgba(168,85,247,.2);}
+.quiz-btns{display:flex;gap:7px;justify-content:center;margin-top:9px;flex-wrap:wrap;}
+.q-btn{border:none;border-radius:11px;padding:8px 17px;font-family:'Fredoka One',cursive;
+  font-size:.88rem;cursor:pointer;transition:all .2s;box-shadow:0 3px 8px rgba(0,0,0,.14);}
+.q-btn:hover{transform:translateY(-2px);filter:brightness(1.1);}
+.q-btn:active{transform:translateY(0);}
+.q-btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+.q-btn.chk{background:var(--purple);color:#fff;}
+.q-btn.nxt{background:var(--green);color:#fff;}
+.q-btn.hnt{background:var(--amber);color:#fff;}
+.q-btn.ai{background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff;}
+
+.fb{margin-top:8px;padding:9px 12px;border-radius:12px;font-weight:700;font-size:.93rem;
+  line-height:1.5;animation:popIn .3s cubic-bezier(.36,2,.6,.9);}
+@keyframes popIn{0%{transform:scale(.5);opacity:0}100%{transform:scale(1);opacity:1}}
+.fb.ok{background:#dcfce7;color:#15803d;border:2px solid #86efac;}
+.fb.ng{background:#fee2e2;color:#dc2626;border:2px solid #fca5a5;}
+.fb.ht{background:#fef3c7;color:#92400e;border:2px solid #fcd34d;}
+.fb.ai{background:#f5f3ff;color:#4c1d95;border:2px solid #c4b5fd;text-align:left;font-size:.85rem;}
+
+.num-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.num-inp{border:3px solid #c4b5fd;border-radius:12px;padding:7px 12px;font-family:'Fredoka One',cursive;
+  font-size:1.25rem;width:145px;text-align:center;outline:none;background:#f5f3ff;color:var(--text);}
+.num-inp:focus{border-color:var(--purple);}
+.show-btn{background:var(--purple);color:#fff;border:none;border-radius:12px;padding:8px 16px;
+  font-family:'Fredoka One',cursive;font-size:.9rem;cursor:pointer;transition:all .2s;
+  box-shadow:0 3px 8px rgba(124,58,237,.4);}
+.show-btn:hover{transform:translateY(-2px);background:#6d28d9;}
+
+.ai-loader{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;color:var(--purple);font-weight:700;}
+.ai-spin{width:14px;height:14px;border:3px solid #c4b5fd;border-top-color:var(--purple);
+  border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.step-dots{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;}
+.sd{width:9px;height:9px;border-radius:50%;background:#e9d5ff;cursor:pointer;transition:background .3s;}
+.sd.done{background:var(--purple);}
+.sd.cur{background:var(--amber);animation:sdpulse 1s infinite;}
+@keyframes sdpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4)}}
+
+.log-list{max-height:110px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;margin-top:7px;}
+.log-item{font-size:.78rem;padding:3px 8px;border-radius:7px;font-weight:600;}
+.log-item.c{background:#dcfce7;color:#15803d;}
+.log-item.w{background:#fee2e2;color:#dc2626;}
+
+.confetti-piece{position:fixed;animation:cfall linear forwards;pointer-events:none;z-index:999;}
+@keyframes cfall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+@media(max-width:680px){
+  .tutor-panel{width:100%;}
+  .bead{width:25px;height:15px;}
+  .rod-col{width:31px;}
+  .rod-label{width:31px;font-size:.52rem;}
+}
+
+/* ONBOARDING */
+.onboard{position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:1200;display:none;align-items:center;justify-content:center;padding:14px;}
+.onboard.active{display:flex;}
+.onboard-card{background:#fff;border-radius:18px;max-width:520px;width:100%;padding:16px;box-shadow:0 14px 40px rgba(0,0,0,.3);border:3px solid #ddd6fe;}
+.onboard-step{font-size:.72rem;font-weight:800;letter-spacing:1px;color:#6d28d9;text-transform:uppercase;}
+.onboard-title{font-family:'Fredoka One',cursive;color:#4c1d95;font-size:1.35rem;margin-top:6px;}
+.onboard-text{margin-top:8px;color:#312e81;font-size:.92rem;font-weight:700;line-height:1.55;}
+.onboard-tip{margin-top:9px;background:#f5f3ff;border:2px dashed #c4b5fd;color:#5b21b6;border-radius:10px;padding:7px 10px;font-size:.8rem;font-weight:800;}
+.onboard-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;}
+.onboard-btn{border:none;border-radius:10px;padding:8px 12px;font-family:'Fredoka One',cursive;font-size:.82rem;cursor:pointer;}
+.onboard-btn.skip{background:#e2e8f0;color:#334155;}
+.onboard-btn.next{background:var(--purple);color:#fff;}
+.onboard-btn.next:disabled{opacity:.5;cursor:not-allowed;}
+.demo-lock .abacus-frame,.demo-lock #practiceArea{pointer-events:none;filter:saturate(.75);}
+
+/* SUBTITLE BAR (karaoke-style narration, like video subtitles) */
+.subtitle-bar{position:fixed;bottom:18px;left:50%;transform:translate(-50%,120px);
+  background:rgba(15,23,42,.92);color:#fff;padding:12px 22px;border-radius:14px;
+  max-width:90%;min-width:280px;font-size:1.05rem;font-weight:700;text-align:center;
+  z-index:1000;opacity:0;pointer-events:none;
+  box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 0 2px rgba(251,191,36,.5);
+  transition:transform .35s ease,opacity .35s ease;line-height:1.5;}
+.subtitle-bar.active{transform:translate(-50%,0);opacity:1;}
+.subtitle-word{display:inline-block;margin:0 2px;transition:all .14s ease;color:#e5e7eb;}
+.subtitle-word.spoken{color:#fbbf24;}
+.subtitle-word.current{color:#fde047;text-shadow:0 0 12px rgba(253,224,71,.95);
+  transform:scale(1.2);}
+.subtitle-meta{display:block;font-size:.65rem;font-weight:600;color:#a3a3a3;
+  margin-top:5px;letter-spacing:1px;text-transform:uppercase;}
+@media(max-width:680px){
+  .subtitle-bar{font-size:.92rem;padding:10px 14px;}
+}
+</style>
+</head>
+<body>
+<div class="bg-scene" id="bgScene"></div>
+<div id="app">
+  <header>
+    <h1>🧮 AbaKids AI Tutor</h1>
+    <p>Your Smart Abacus Learning Buddy!</p>
+    <div class="ai-badge">✨ Powered by Mistral AI</div>
+  </header>
+
+  <div class="main-wrap">
+    <!-- LEFT: AI TUTOR -->
+    <div class="tutor-panel">
+      <div class="mascot-box">
+        <span class="mascot" id="mascot">🦉</span>
+        <div class="mascot-name" id="mascotName">Professor Abby</div>
+        <div class="ai-pill">🤖 Live AI Brain</div>
+        <div class="avatar-row" id="avatarRow" title="Pick your buddy!"></div>
+        <div class="avatar-card" id="avatarCard">
+          <div class="nm" id="avatarNm"></div>
+          <div class="cp" id="avatarCatch"></div>
+          <div class="pw" id="avatarPower"></div>
+        </div>
+      </div>
+
+
+      <div id="tutor-speech"><div class="typing-dots"><span></span><span></span><span></span></div></div>
+
+      <!-- Chat with AI -->
+      <div class="chat-wrap">
+        <input class="chat-input" id="chatInput" placeholder="Ask me anything! 🌟"
+          onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" id="chatSendBtn" onclick="sendChat()">🚀</button>
+      </div>
+
+      <!-- Lessons -->
+      <div class="lesson-nav">
+        <button class="lesson-btn active" onclick="setLesson('intro')"     id="btn-intro">    <span>📖</span> What is Abacus?</button>
+        <button class="lesson-btn"        onclick="setLesson('represent')" id="btn-represent"><span>🔢</span> Show Numbers</button>
+        <button class="lesson-btn"        onclick="setLesson('add')"       id="btn-add">      <span>➕</span> Addition</button>
+        <button class="lesson-btn"        onclick="setLesson('sub')"       id="btn-sub">      <span>➖</span> Subtraction</button>
+        <button class="lesson-btn"        onclick="setLesson('mul')"       id="btn-mul">      <span>✖️</span> Multiplication</button>
+        <button class="lesson-btn"        onclick="setLesson('div')"       id="btn-div">      <span>➗</span> Division</button>
+      </div>
+      <div class="helper-row">
+        <button class="mini-btn" id="beginnerBtn" onclick="toggleBeginnerMode()">👶 Beginner ON</button>
+        <button class="mini-btn" onclick="startOnboarding(true)">📖 Replay Intro</button>
+        <button class="mini-btn" id="lessonDemoBtn" onclick="replayLessonTutorial()">🎬 Replay Lesson Demo</button>
+        <button class="mini-btn" id="skipLessonDemoBtn" onclick="skipLessonTutorial()" style="display:none">⏭ Skip Demo</button>
+      </div>
+      <div class="demo-note" id="demoNote"></div>
+      <div class="badge-row" id="badgeRow"></div>
+
+      <div class="score-row">
+        <span id="stars" style="font-size:1.2rem">⭐</span>
+        <span class="score-lbl" id="scoreLbl">Score: 0</span>
+        <span id="streakBadge" style="font-size:.82rem;color:#fde68a;font-weight:800;"></span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      <span class="journey-lbl" id="journeyLbl">Journey: 1/6 lessons unlocked</span>
+
+      <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊 Sound ON</button>
+      <button class="sound-btn" id="voiceBtn" onclick="toggleVoice()">🎤 Voice ON</button>
+    </div>
+
+    <!-- RIGHT: ABACUS + PRACTICE -->
+    <div class="abacus-area">
+      <div class="mode-tabs">
+        <button class="mode-tab rep active" id="tab-rep" onclick="setMode('represent')">🔢 Show</button>
+        <button class="mode-tab add"        id="tab-add" onclick="setMode('add')">➕ Add</button>
+        <button class="mode-tab sub"        id="tab-sub" onclick="setMode('sub')">➖ Sub</button>
+        <button class="mode-tab mul"        id="tab-mul" onclick="setMode('mul')">✖️ Mul</button>
+        <button class="mode-tab div"        id="tab-div" onclick="setMode('div')">➗ Div</button>
+      </div>
+
+      <div class="val-bar">
+        <div class="val-item">
+          <span class="val-lbl">Abacus Value</span>
+          <span class="val-num" id="abaVal">0</span>
+        </div>
+        <div class="val-divider"></div>
+        <div class="val-item" id="targetWrap" style="display:none">
+          <span class="val-lbl">Target</span>
+          <span class="val-num" id="targetVal">–</span>
+        </div>
+        <div class="val-divider" id="targetDiv" style="display:none"></div>
+        <div class="val-item">
+          <span class="val-lbl">Solved</span>
+          <span class="val-num" id="qCount">0</span>
+        </div>
+      </div>
+
+      <div class="abacus-frame">
+        <div class="abacus-inner">
+          <div class="rod-labels" id="rodLabels"></div>
+          <div class="heaven-sec" id="heavenSec">
+            <span class="sec-lbl h">5</span>
+            <div style="display:flex;gap:2px" id="heavenBeads"></div>
+          </div>
+          <div class="earth-sec" id="earthSec">
+            <span class="sec-lbl e">1</span>
+            <div style="display:flex;flex-direction:column;gap:2px;flex:1" id="earthRows"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="practice-area" id="practiceArea">
+        <div class="prac-title" id="pracTitle">🧮 Interactive Abacus</div>
+        <div id="pracContent"></div>
+      </div>
+
+      <div class="step-dots" id="stepDots"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Karaoke-style subtitle bar -->
+<div class="subtitle-bar" id="subtitleBar">
+  <div id="subtitleText"></div>
+  <span class="subtitle-meta" id="subtitleMeta">🎤 Subtitles</span>
+</div>
+<div class="onboard" id="onboard">
+  <div class="onboard-card">
+    <div class="onboard-step" id="onbStep">Step 1/4</div>
+    <div class="onboard-title" id="onbTitle">Welcome!</div>
+    <div class="onboard-text" id="onbText"></div>
+    <div class="onboard-tip" id="onbTip"></div>
+    <div class="onboard-actions">
+      <button class="onboard-btn skip" onclick="skipOnboarding()">Skip</button>
+      <button class="onboard-btn next" id="onbNextBtn" onclick="nextOnboarding()">Next</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   MISTRAL AI ENGINE (via backend proxy)
+══════════════════════════════════════════ */
+const BACKEND_URL    = 'http://localhost:8000';
+const CHAT_URL       = BACKEND_URL + '/chat';
+const CHAT_STREAM_URL= BACKEND_URL + '/chat/stream';
+
+const SYS = `You are Professor Abby, a cheerful AI abacus tutor for children aged 6-12.
+Rules: Use VERY simple words. Keep responses 2-4 sentences MAX. Use fun emojis heavily.
+You know the 17-rod soroban abacus deeply:
+- Heaven beads (top, 1 per rod) = value 5 each
+- Earth beads (bottom, 4 per rod) = value 1 each  
+- Rods right-to-left: ones, tens, hundreds, thousands...
+- Tapping an Earth bead toggles blue (OFF) ↔ green (ON)
+- Tapping a Heaven bead toggles orange (OFF) ↔ red (ON)
+- Addition = turn needed beads ON
+- Subtraction = turn needed beads OFF
+- Multiplication = repeated addition
+- Division = repeated subtraction
+Story Rules for 6-year-olds:
+- Big Friend Rule: when a carry/swap is needed, say the Heaven bead is the Big Friend (or King) helping.
+- Secret Trade: explain swaps as a Happy Swap (trade big bead for best friends, or friends combine to call Big Friend).
+- Always explain WHY in one tiny line (use fingers/hand or simple object analogy).
+Tutor Rule Framework (must follow in hints and step guidance):
+- Level 1 Direct Addition: if enough beads are available in that section, move directly.
+- Level 2 Small Friend (High-Five Rule / Hand of 5): use complement-to-5 trade.
+- Level 3 Big Friend (Double-Clap Rule / Hand of 10): use complement-to-10 and carry +1 to left rod.
+- Special Combination Rule: when Big Friend removal cannot be done directly with bottom beads, do mixed top+bottom trade, then carry.
+- Subtraction uses reverse friend logic: remove directly when possible; otherwise borrow/secret trade from left rod, then complete subtraction.
+- When teaching add/sub steps, name the rule first, then action (hand idea + bead move), then tiny WHY.
+Always encourage kids! Be super positive and excited! Never give long explanations.
+IMPORTANT SCOPE RULE: Only answer abacus-learning topics (beads, rods, place value, number representation, add/sub/mul/div on abacus practice). If asked anything outside abacus learning, refuse politely in one short sentence and ask for an abacus question instead.`;
+
+/* ══════════════════════════════════════════
+   AVATARS & TEXT-TO-SPEECH NARRATION
+══════════════════════════════════════════ */
+const AVATARS = [
+  {id:'owl',     emoji:'🦉', name:'Professor Abby', vibe:'wise & cheerful',      rate:.94, pitch:1.08, catch:'Count calm, count smart!',            power:'Superpower: Explains hard tricks in tiny steps',        preview:'Hoot hoot! I am Professor Abby. Let us make numbers sparkle!'},
+  {id:'panda',   emoji:'🐼', name:'Bamboo',          vibe:'gentle & playful',     rate:.92, pitch:1.02, catch:'Soft paws, strong math!',            power:'Superpower: Keeps you relaxed while solving',           preview:'Hi friend! Bamboo here. Slow and steady, we can do this!'},
+  {id:'fox',     emoji:'🦊', name:'Foxy',            vibe:'clever & quick',       rate:1.00, pitch:1.12, catch:'Fast brain, fun game!',             power:'Superpower: Gives shortcut hints',                      preview:'Hey champ! Foxy is ready. Quick trick time!'},
+  {id:'bunny',   emoji:'🐰', name:'Hoppy',           vibe:'bouncy & sweet',       rate:1.03, pitch:1.22, catch:'Hop, tap, win!',                   power:'Superpower: Cheer boosts after each step',              preview:'Boing boing! Hoppy is here. Tap beads and smile big!'},
+  {id:'robot',   emoji:'🤖', name:'Robi',            vibe:'tech-loving & precise',rate:.90, pitch:.92, catch:'Beep! Perfect pattern mode.',         power:'Superpower: Ultra-accurate counting',                   preview:'Greetings learner. Robi online. Precision mode activated!'},
+  {id:'unicorn', emoji:'🦄', name:'Sparkle',         vibe:'magical & dreamy',     rate:.98, pitch:1.24, catch:'Magic math, glitter path!',          power:'Superpower: Turns practice into fantasy quests',        preview:'Twinkle time! Sparkle is here. Let us do magical math!'},
+  {id:'dragon',  emoji:'🐲', name:'Drago',           vibe:'brave & friendly',     rate:.93, pitch:.98, catch:'Roar for more scores!',              power:'Superpower: Courage boost on hard questions',           preview:'Rooaaar! Drago is with you. Brave mind, big wins!'},
+  {id:'cat',     emoji:'🐱', name:'Kitty',           vibe:'curious & cuddly',     rate:.99, pitch:1.18, catch:'Purr, learn, repeat!',              power:'Superpower: Finds tiny mistakes quickly',               preview:'Meow hello! Kitty is curious. Let us explore numbers!'},
+  {id:'monkey',  emoji:'🐵', name:'Mojo',            vibe:'silly & fun',          rate:1.05, pitch:1.20, catch:'Giggle + wiggle + solve!',         power:'Superpower: Makes every quiz playful',                  preview:'Woohoo! Mojo in the house. Let us monkey around with math!'},
+  {id:'lion',    emoji:'🦁', name:'Leo',             vibe:'bold & encouraging',   rate:.92, pitch:.96, catch:'Tiny taps, mighty wins!',            power:'Superpower: Confidence roar before challenges',         preview:'Lion roar! Leo believes in you. Let us conquer this!'},
+  {id:'superkid',emoji:'🧒', name:'Super Nomi',      vibe:'mischief & confidence',rate:1.04, pitch:1.16, catch:'Super kid, super count!',            power:'Superpower: Turns mistakes into missions',              preview:'Hey buddy! Super Nomi here. We level up with every tap!'},
+  {id:'inventor',emoji:'🧑‍🔬',name:'Nova',           vibe:'inventive & curious',  rate:.96, pitch:1.10, catch:'Build ideas, build answers!',       power:'Superpower: Invents cool memory tricks',                preview:'Nova reporting! Let us invent a smart way to solve this!'},
+  {id:'ninja',   emoji:'🥷', name:'Nimble Nino',     vibe:'quick & focused',      rate:1.06, pitch:1.00, catch:'Silent focus, sharp math!',         power:'Superpower: Speed focus mode',                          preview:'Shhh... Nimble Nino is here. Quiet mind, quick solve!'},
+  {id:'pirate',  emoji:'🏴‍☠️',name:'Captain Coco',   vibe:'adventurous & funny',  rate:.97, pitch:1.06, catch:'Treasure is the right answer!',      power:'Superpower: Adventure storytelling hints',              preview:'Ahoy matey! Captain Coco sails to number treasure!'},
+  {id:'space',   emoji:'🧑‍🚀',name:'Orbit Omi',      vibe:'spacey & brave',       rate:.95, pitch:1.14, catch:'Launch, count, land!',              power:'Superpower: Space mission progress vibes',              preview:'3...2...1! Orbit Omi ready for a math launch!'},
+  {id:'genius',  emoji:'🧠', name:'Mintu',           vibe:'calm & brainy',        rate:.90, pitch:1.02, catch:'Think neat, solve sweet!',           power:'Superpower: Crystal-clear explanation mode',            preview:'Hello! Mintu here. Calm thinking gives clever answers.'},
+];
+
+
+let currentAvatar = localStorage.getItem('avatar') || 'owl';
+let voiceOn       = (localStorage.getItem('voiceOn') ?? 'true') === 'true';
+let availableVoices = [];
+let voiceRetryTimer = null;
+let speechSeq = 0;
+
+function loadVoices(){
+  if(!('speechSynthesis' in window)) return;
+  const next = speechSynthesis.getVoices() || [];
+  if(next.length) availableVoices = next;
+  if(!availableVoices.length){
+    if(voiceRetryTimer) clearTimeout(voiceRetryTimer);
+    voiceRetryTimer = setTimeout(loadVoices, 350);
+  }
+}
+if('speechSynthesis' in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function langName(){
+  return 'English';
+}
+
+function currentAvatarObj(){
+  return AVATARS.find(a => a.id === currentAvatar) || AVATARS[0];
+}
+function avatarText(txt){
+  const av = currentAvatarObj();
+  return String(txt||'')
+    .replace(/\{name\}/g, av.name)
+    .replace(/\{emoji\}/g, av.emoji);
+}
+function avatarAnalogy(){
+  const av=currentAvatarObj();
+  if(av.id==='monkey') return 'bananas';
+  if(av.id==='unicorn') return 'magic stars';
+  if(av.id==='pirate') return 'treasure coins';
+  if(av.id==='space') return 'space gems';
+  return 'fingers on your hand';
+}
+function isMagicText(t){
+  return /\b(big friend|happy swap|secret trade|borrow|carry|king|trade)\b/i.test(String(t||''));
+}
+
+// Build a system prompt that injects character persona + language requirement.
+function getSys(override){
+  const base = override || SYS;
+  const av = currentAvatarObj();
+  return base + `\n\nYou ARE the character "${av.name}" ${av.emoji} (${av.vibe}). Speak in first person AS ${av.name}, with that personality. Stay encouraging and kid-friendly. Respond only in English. Use very short lines for 6-year-olds (around 4-10 words each). Use avatar-style analogy mode: explain with "${avatarAnalogy()}" when it helps. Occasionally add this catchphrase naturally: "${av.catch}". For any carry/borrow swap, explicitly use "Big Friend" and "Happy Swap" language in kid-friendly words.`;
+}
+const ABACUS_CHAT_RE = /\b(abacus|soroban|bead|beads|rod|rods|place\s*value|ones?|tens?|hundreds?|thousands?|heaven|earth|carry|borrow|count(?:ing)?|show\s+number|represent|addition|subtraction|multiplication|division|add|subtract|multiply|divide|math)\b/i;
+const ABACUS_EXPR_RE = /^\s*[\d\s()+\-*/×÷=.]+\s*$/;
+function isAbacusMessage(msg){
+  const t = String(msg||'').trim();
+  if(!t) return false;
+  return ABACUS_CHAT_RE.test(t) || ABACUS_EXPR_RE.test(t);
+}
+
+// Strip HTML, markdown and emojis so TTS doesn't read pictographs aloud.
+function cleanForSpeech(text){
+  if(!text) return '';
+  text = text.replace(/<[^>]+>/g,' ');
+  text = text.replace(/[*_`#]+/g,'');
+  try { text = text.replace(/[\p{Extended_Pictographic}]/gu,''); } catch(e){}
+  return text.replace(/\s+/g,' ').trim();
+}
+
+/* ═══ KARAOKE SUBTITLES — always show, with or without TTS ═══ */
+let subtitleWords = [];
+let fakeSubInterval = null;
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showSubtitle(text){
+  if(fakeSubInterval){ clearInterval(fakeSubInterval); fakeSubInterval=null; }
+  const bar  = document.getElementById('subtitleBar');
+  const cont = document.getElementById('subtitleText');
+  const meta = document.getElementById('subtitleMeta');
+  if(!bar || !cont) return;
+  if(!text){ bar.classList.remove('active'); return; }
+  subtitleWords = text.split(/\s+/).filter(Boolean);
+  cont.innerHTML = subtitleWords.map((w,i) =>
+    `<span class="subtitle-word" data-i="${i}">${escapeHtml(w)}</span>`
+  ).join(' ');
+  if(meta) meta.textContent = `🎤 ${langName()} subtitle`;
+  bar.classList.add('active');
+}
+
+function setSubtitleMeta(txt){
+  const meta = document.getElementById('subtitleMeta');
+  if(meta) meta.textContent = txt;
+}
+
+function highlightSubtitle(charIndex){
+  const cont = document.getElementById('subtitleText');
+  if(!cont || !subtitleWords.length) return;
+  let count = 0, wordIdx = subtitleWords.length - 1;
+  for(let i=0; i<subtitleWords.length; i++){
+    const len = subtitleWords[i].length;
+    if(charIndex < count + len){ wordIdx = i; break; }
+    count += len + 1; // +1 for the space
+  }
+  cont.querySelectorAll('.subtitle-word').forEach((el,i) => {
+    el.classList.remove('current');
+    if(i < wordIdx) el.classList.add('spoken');
+    if(i === wordIdx) el.classList.add('current');
+  });
+}
+
+function finalizeSubtitle(){
+  const cont = document.getElementById('subtitleText');
+  if(cont){
+    cont.querySelectorAll('.subtitle-word').forEach(el => {
+      el.classList.add('spoken'); el.classList.remove('current');
+    });
+  }
+  setTimeout(() => {
+    const bar = document.getElementById('subtitleBar');
+    if(bar) bar.classList.remove('active');
+  }, 2800);
+}
+
+function fakeSubtitleProgress(){
+  // Time-based highlight when TTS isn't speaking (subtitles still scroll like a video).
+  if(fakeSubInterval){ clearInterval(fakeSubInterval); fakeSubInterval=null; }
+  if(!subtitleWords.length){ finalizeSubtitle(); return; }
+  let i = 0;
+  fakeSubInterval = setInterval(() => {
+    if(i >= subtitleWords.length){
+      clearInterval(fakeSubInterval); fakeSubInterval = null;
+      finalizeSubtitle();
+      return;
+    }
+    let charIdx = 0;
+    for(let j=0; j<i; j++) charIdx += subtitleWords[j].length + 1;
+    highlightSubtitle(charIdx);
+    i++;
+  }, 280);
+}
+
+/* ═══ TTS that NEVER triggers a language-pack download popup ═══ */
+function speak(text){
+  const seq = ++speechSeq;
+  const cleaned = cleanForSpeech(text);
+  // 1) ALWAYS show subtitles first — works even if TTS fails.
+  showSubtitle(cleaned);
+  if(!cleaned){ return; }
+
+  // 2) Voice OFF, no SpeechSynthesis support, or voices not loaded → subtitle-only mode.
+  if(!voiceOn || !('speechSynthesis' in window)){
+    setSubtitleMeta('📺 Subtitles only (voice off)');
+    fakeSubtitleProgress();
+    return;
+  }
+  if(!availableVoices.length) loadVoices();
+  if(!availableVoices.length){
+    setSubtitleMeta('📺 Subtitles only (no voices installed)');
+    fakeSubtitleProgress();
+    return;
+  }
+
+  // 3) Pick a voice that EXISTS LOCALLY so the browser never asks the OS to download a pack.
+  const exact   = availableVoices.find(v => v.lang === 'en-US' || v.lang === 'en-GB');
+  const partial = availableVoices.find(v => v.lang && v.lang.startsWith('en'));
+  const chosen  = exact || partial || availableVoices.find(v => v.default) || availableVoices[0];
+
+  // If we couldn't find any voice in the requested language, warn the user via subtitle meta
+  // (no popup), and read with whatever voice IS installed (often English) so kids still hear it.
+  const usingFallback = !exact && !partial;
+
+  speechSynthesis.cancel();
+  const utt = new SpeechSynthesisUtterance(cleaned);
+  const av = currentAvatarObj();
+  const magicMoment = isMagicText(cleaned);
+  utt.voice = chosen;
+  utt.lang  = chosen.lang; // CRITICAL: match the chosen voice exactly, do NOT use unmatched lang codes
+  const baseRate=Math.min(1.1, Math.max(0.82, av.rate ?? 0.95));
+  const basePitch=Math.min(1.35, Math.max(0.85, av.pitch ?? 1.15));
+  utt.rate  = magicMoment ? Math.max(0.84, baseRate - 0.06) : baseRate;
+  utt.pitch = magicMoment ? Math.min(1.42, basePitch + 0.09) : basePitch;
+
+  // Karaoke word-by-word highlighting via boundary events.
+  utt.onboundary = (e) => {
+    if(seq !== speechSeq) return;
+    if(typeof e.charIndex === 'number') highlightSubtitle(e.charIndex);
+  };
+
+  const mascotEl = document.getElementById('mascot');
+  utt.onstart = () => {
+    if(seq !== speechSeq) return;
+    if(mascotEl) mascotEl.classList.add('talking');
+    setSubtitleMeta(usingFallback
+      ? `📺 ${langName()} subtitle • voice: ${chosen.name || chosen.lang}`
+      : `🎤 Speaking • ${chosen.name || chosen.lang}`);
+  };
+  utt.onend = () => {
+    if(seq !== speechSeq) return;
+    if(mascotEl) mascotEl.classList.remove('talking');
+    finalizeSubtitle();
+  };
+  utt.onerror = () => {
+    if(seq !== speechSeq) return;
+    if(mascotEl) mascotEl.classList.remove('talking');
+    setSubtitleMeta('📺 Voice unavailable — subtitles only');
+    fakeSubtitleProgress();
+  };
+
+  try { speechSynthesis.speak(utt); }
+  catch(e){
+    setSubtitleMeta('📺 Voice unavailable — subtitles only');
+    fakeSubtitleProgress();
+  }
+}
+
+function toggleVoice(){
+  voiceOn = !voiceOn;
+  localStorage.setItem('voiceOn', voiceOn);
+  if(!voiceOn && 'speechSynthesis' in window){
+    speechSynthesis.cancel();
+    speechSeq++;
+    const m = document.getElementById('mascot');
+    if(m) m.classList.remove('talking');
+    const bar = document.getElementById('subtitleBar');
+    if(bar) bar.classList.remove('active');
+  }
+  const btn = document.getElementById('voiceBtn');
+  if(btn) btn.textContent = voiceOn ? '🎤 Voice ON' : '🔇 Voice OFF';
+}
+
+function applyAvatar(id){
+  const av = AVATARS.find(a => a.id === id) || AVATARS[0];
+  currentAvatar = av.id;
+  localStorage.setItem('avatar', av.id);
+  const m = document.getElementById('mascot');
+  const n = document.getElementById('mascotName');
+  if(m) m.textContent = av.emoji;
+  if(n) n.textContent = av.name;
+  renderAvatarCard();
+  renderAvatars();
+}
+function renderAvatarCard(){
+  const av = currentAvatarObj();
+  const nm = document.getElementById('avatarNm');
+  const cp = document.getElementById('avatarCatch');
+  const pw = document.getElementById('avatarPower');
+  if(nm) nm.textContent = `${av.emoji} ${av.name}`;
+  if(cp) cp.textContent = av.catch || '';
+  if(pw) pw.textContent = av.power || '';
+}
+function previewAvatar(){
+  const av = currentAvatarObj();
+  const speech = document.getElementById('tutor-speech');
+  if(speech) speech.innerHTML = `${av.emoji} ${av.preview || `Hi! I am ${av.name}!`}`;
+  if(voiceOn) speak(av.preview || `Hi! I am ${av.name}!`);
+}
+
+function renderAvatars(){
+  const row = document.getElementById('avatarRow');
+  if(!row) return;
+  row.innerHTML = '';
+  AVATARS.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'avatar-btn' + (a.id === currentAvatar ? ' active' : '');
+    btn.textContent = a.emoji;
+    btn.title = `${a.name} (${a.vibe})`;
+    btn.onclick = () => { playClick(); applyAvatar(a.id); previewAvatar(); };
+    row.appendChild(btn);
+  });
+}
+
+
+let aiHistory = [], aiLocked = false;
+
+async function streamAI(prompt, sysOverride) {
+  if (aiLocked) return '';
+  aiLocked = true;
+  document.getElementById('chatSendBtn').disabled = true;
+  if('speechSynthesis' in window) speechSynthesis.cancel();
+
+  const msgs = [
+    ...aiHistory,
+    {role:'user', content: prompt}
+  ];
+  const speech = document.getElementById('tutor-speech');
+  speech.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+
+  let full = '';
+  try {
+    const res = await fetch(CHAT_STREAM_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        system: getSys(sysOverride),
+        messages: msgs,
+        max_tokens: 300
+      })
+    });
+    if (!res.ok) throw new Error('API error ' + res.status);
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    speech.innerHTML = '<span class="stream-cursor"></span>';
+
+    let buffer = '';
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      buffer += dec.decode(value, {stream:true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        const d = line.slice(5).trim();
+        if(!d || d==='[DONE]') continue;
+        try {
+          const p = JSON.parse(d);
+          const piece = p.choices?.[0]?.delta?.content;
+          if(piece){
+            full += piece;
+            speech.innerHTML = full.replace(/\n/g,'<br>') + '<span class="stream-cursor"></span>';
+          }
+        } catch{}
+      }
+    }
+    speech.innerHTML = full.replace(/\n/g,'<br>');
+    speak(full); // 🎤 narrate in selected language with chosen avatar's voice
+    aiHistory.push({role:'user',content:prompt});
+    aiHistory.push({role:'assistant',content:full});
+    if(aiHistory.length>14) aiHistory = aiHistory.slice(-14);
+  } catch(e) {
+    speech.innerHTML = `${currentAvatarObj().emoji} Oops, my AI brain hiccuped! Try again or click a lesson! 😊`;
+  }
+  aiLocked=false;
+  document.getElementById('chatSendBtn').disabled=false;
+  return full;
+}
+
+async function quietAI(prompt) {
+  try {
+    const r = await fetch(CHAT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        system: getSys(),
+        max_tokens: 260,
+        messages:[{role:'user', content: prompt}]
+      })
+    });
+    const d = await r.json();
+    return d.text || '';
+  } catch{ return ''; }
+}
+
+function sendChat(){
+  const inp = document.getElementById('chatInput');
+  const msg = inp.value.trim();
+  if(!msg||aiLocked) return;
+  inp.value='';
+  initAudio(); playClick();
+  if(!isAbacusMessage(msg)){
+    const blocked = `${currentAvatarObj().emoji} I can only help with abacus learning. Please ask an abacus question like “How do I show 47?” 😊`;
+    const speech = document.getElementById('tutor-speech');
+    if(speech) speech.innerHTML = blocked;
+    speak(blocked);
+    return;
+  }
+  streamAI(`[Context: lesson=${currentLesson}, mode=${currentMode}, abacus=${totalVal()}, score=${score}]\nKid asks: "${msg}"`);
+}
+
+/* ══════════════════════════════════════════
+   AUDIO
+══════════════════════════════════════════ */
+let audioCtx=null, soundOn=true, bgT=0, bgTimer=null;
+const NOTES=[523,659,784,659,523,392,440,523,659,523,784,880,784,659,523,440,392,523];
+
+function initAudio(){
+  if(audioCtx) return;
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  bgT = audioCtx.currentTime;
+  schedNotes();
+  bgTimer = setInterval(schedNotes, NOTES.length*290);
+}
+function schedNotes(){
+  if(!soundOn||!audioCtx) return;
+  NOTES.forEach((f,i)=>{
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value=f; o.type='triangle';
+    const t=bgT+i*.29;
+    g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(.05,t+.05);
+    g.gain.linearRampToValueAtTime(0,t+.26);
+    o.start(t); o.stop(t+.29);
+  });
+  bgT+=NOTES.length*.29;
+}
+function tone(f=440,tp='sine',d=.14,v=.16){
+  if(!soundOn||!audioCtx) return;
+  const o=audioCtx.createOscillator(),g=audioCtx.createGain();
+  o.connect(g);g.connect(audioCtx.destination);
+  o.frequency.value=f;o.type=tp;
+  g.gain.setValueAtTime(v,audioCtx.currentTime);
+  g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+d);
+  o.start();o.stop(audioCtx.currentTime+d);
+}
+function playClick(){tone(800,'sine',.06,.1);}
+function playOK(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,'triangle',.2,.13),i*80));}
+function playNG(){tone(180,'sawtooth',.3,.17);}
+function toggleSound(){
+  soundOn=!soundOn;
+  document.getElementById('soundBtn').textContent=soundOn?'🔊 Sound ON':'🔇 Sound OFF';
+  if(soundOn&&!audioCtx) initAudio();
+}
+document.body.addEventListener('click',()=>{if(!audioCtx)initAudio();},{once:true});
+
+/* ══════════════════════════════════════════
+   BG SCENE
+══════════════════════════════════════════ */
+(function(){
+  const s=document.getElementById('bgScene');
+  for(let i=0;i<5;i++){
+    const c=document.createElement('div');c.className='cloud';
+    const w=80+Math.random()*120,h=28+Math.random()*28;
+    c.style.cssText=`width:${w}px;height:${h}px;top:${4+Math.random()*22}%;left:-${w}px;
+      animation-duration:${20+Math.random()*30}s;animation-delay:-${Math.random()*30}s;`;
+    s.appendChild(c);
+  }
+  '⭐🌟✨💫🌈🎵🎶'.split('').forEach(e=>{
+    const el=document.createElement('div');el.className='floaty';el.textContent=e;
+    el.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*42}%;
+      animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2}s;opacity:.3;`;
+    s.appendChild(el);
+  });
+})();
+
+/* ══════════════════════════════════════════
+   ABACUS CORE
+══════════════════════════════════════════ */
+const RODS=17;
+const ROD_IDX_TENS=RODS-2;
+const ROD_IDX_ONES=RODS-1;
+let beads=[];
+let demoFocusRods=new Set();
+let demoTradePulse=false;
+function initBeads(){beads=Array.from({length:RODS},()=>({h:false,e:[false,false,false,false]}));}
+initBeads();
+
+function rodVal(r){return((beads[r].h?5:0)+beads[r].e.filter(Boolean).length)*Math.pow(10,RODS-1-r);}
+function totalVal(){return beads.reduce((s,_,r)=>s+rodVal(r),0);}
+
+const RLBL=['10Q','Q','100Tr','10Tr','Tr','100B','10B','B','100M','10M','M','100K','10K','1K','100','10','1'];
+const RFULL=['ten quadrillion','quadrillion','hundred trillion','ten trillion','trillion','hundred billion','ten billion','billion',
+             'hundred million','ten million','million','hundred thousand','ten thousand','thousand','hundreds','tens','ones'];
+
+function renderAbacus(){
+  const hRow=document.getElementById('heavenBeads');
+  const eRows=document.getElementById('earthRows');
+  const lbls=document.getElementById('rodLabels');
+  hRow.innerHTML='';eRows.innerHTML='';lbls.innerHTML='';
+  lbls.appendChild(Object.assign(document.createElement('div'),{className:'lbl-spacer'}));
+  const eRowEls=Array.from({length:4},()=>{
+    const d=document.createElement('div');d.style.cssText='display:flex;gap:2px;';
+    eRows.appendChild(d);return d;
+  });
+  for(let r=0;r<RODS;r++){
+    const isFocused=demoFocusRods.has(r);
+    const focusCls=isFocused?' focus':'';
+    const tradeCls=isFocused&&demoTradePulse?' trade':'';
+    const lb=document.createElement('div');
+    lb.className='rod-label'+focusCls;lb.textContent=RLBL[r];lb.title=RFULL[r]||'';
+    lbls.appendChild(lb);
+    const hCol=document.createElement('div');
+    hCol.className='rod-col'+focusCls+tradeCls;
+    const hb=document.createElement('div');
+    hb.className='bead hb'+(beads[r].h?' on':'');
+    hb.title=`Heaven ×${5*Math.pow(10,RODS-1-r)}`;
+    hb.onclick=((ri)=>()=>{if(lessonDemoActive) return; playClick();beads[ri].h=!beads[ri].h;renderAbacus();if(onboardingActive)renderOnboarding();onAbacusChange();})(r);
+    hCol.appendChild(hb);
+    hRow.appendChild(hCol);
+    for(let eb=0;eb<4;eb++){
+      const eCol=document.createElement('div');
+      eCol.className='rod-col'+focusCls+tradeCls;
+      const eEl=document.createElement('div');
+      eEl.className='bead eb'+(beads[r].e[eb]?' on':'');
+      eEl.title=`Earth ×${Math.pow(10,RODS-1-r)}`;
+      eEl.onclick=((ri,bi)=>()=>{if(lessonDemoActive) return; playClick();beads[ri].e[bi]=!beads[ri].e[bi];renderAbacus();if(onboardingActive)renderOnboarding();onAbacusChange();})(r,eb);
+      eCol.appendChild(eEl);
+      eRowEls[eb].appendChild(eCol);
+    }
+  }
+  document.getElementById('abaVal').textContent=totalVal().toLocaleString();
+  const forceScrollToUnits=()=>{
+    const frame=document.querySelector('.abacus-frame');
+    if(frame) frame.scrollLeft=frame.scrollWidth;
+  };
+  requestAnimationFrame(forceScrollToUnits);
+  setTimeout(forceScrollToUnits,35);
+}
+
+function setNum(n){
+  initBeads();
+  const s=Math.abs(Math.floor(n)).toString().padStart(RODS,'0');
+  for(let r=0;r<RODS;r++){
+    const d=parseInt(s[r])||0;
+    beads[r].h=d>=5;
+    const ec=d>=5?d-5:d;
+    for(let e=0;e<ec;e++) beads[r].e[e]=true;
+  }
+  renderAbacus();
+}
+function resetAba(){initBeads();renderAbacus();playClick();}
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let currentLesson='intro', currentMode='represent';
+let score=0, streak=0, qCount=0, quizState={};
+let opLevel={add:1, sub:1, mul:1, div:1};
+let beginnerMode=(localStorage.getItem('beginnerMode') ?? 'true') === 'true';
+let unlockedLessons=JSON.parse(localStorage.getItem('unlockedLessons') || '["intro","represent","add"]');
+let lessonWins=JSON.parse(localStorage.getItem('lessonWins') || '{"represent":0,"add":0,"sub":0,"mul":0,"div":0}');
+let badges=JSON.parse(localStorage.getItem('badges') || '[]');
+let onboardingDone=(localStorage.getItem('onboardingDone') ?? 'false') === 'true';
+let onboardingActive=false, onboardingStep=0;
+const ALL_LESSONS=['intro','represent','add','sub','mul','div'];
+unlockedLessons=Array.from(new Set([...(Array.isArray(unlockedLessons)?unlockedLessons:[]), ...ALL_LESSONS]));
+const BADGE_INFO={
+  color_explorer:{emoji:'🎨',label:'Color Explorer'},
+  number_builder:{emoji:'🔢',label:'Number Builder'},
+  addition_hero:{emoji:'➕',label:'Addition Hero'},
+  streak_star:{emoji:'🔥',label:'Streak Star'},
+  math_champ:{emoji:'🏆',label:'Math Champ'},
+};
+const ONBOARD_STEPS=[
+  {title:'Welcome, little star! 🌟', text:'Hi! I am {name}. We play with colors and numbers on this abacus.', tip:'Tap NEXT to begin your 1-minute tutorial.'},
+  {title:'Color rule is easy 🎨', text:'Earth bead: blue means OFF, green means ON. Heaven bead: orange means OFF, red means ON.', tip:'Tap a bead again to go back to blue or orange.'},
+  {title:'Mini challenge! 🎯', text:'Tap any 2 blue earth beads so they turn green.', tip:'When two are green, NEXT will unlock.', needsChallenge:true},
+  {title:'You did it! 🥳', text:'Great job! You finished your first lesson and earned your first badge.', tip:'Now play Show Numbers and Addition to unlock more fun!'}
+];
+let lessonTutorialSeen=JSON.parse(localStorage.getItem('lessonTutorialSeen') || '{}');
+let levelTutorialSeen=JSON.parse(localStorage.getItem('levelTutorialSeen') || '{}');
+let lessonDemoActive=false, lessonDemoToken=0, lessonDemoLesson='', demoAutoLaunchTimer=null;
+const LESSON_TUTORIALS={
+  intro:[
+    {msg:'Welcome to your abacus! I will show how colors mean ON and OFF. 👀', value:0},
+    {msg:'Top heaven bead turns orange to red when ON. That gives 5! 🔴', value:5},
+    {msg:'Bottom earth beads turn blue to green. Each green bead gives 1. 🟢', value:7},
+    {msg:'So red heaven + two green earth beads = 7. You can tap and try now! 🎉', value:7}
+  ],
+  represent:[
+    {msg:'Let us show a number by place value. We will build 42. 🔢', value:0},
+    {msg:'First set the tens rod to 4 (four green beads on tens).', value:40},
+    {msg:'Now set the ones rod to 2 (two green beads on ones).', value:42},
+    {msg:'Done! The abacus reads 42. Your turn to make numbers! ✨', value:42}
+  ],
+  add:[
+    {msg:'Addition means turning more beads ON. Example: 3 + 4. ➕', value:0},
+    {msg:'Start with 3 on ones rod.', value:3},
+    {msg:'Add 4 more, so now we reach 7.', value:7},
+    {msg:'Great! 3 plus 4 equals 7. Try your own sum now! 🌟', value:7}
+  ],
+  sub:[
+    {msg:'Subtraction means turning beads OFF. Example: 9 − 4. ➖', value:0},
+    {msg:'Start with 9 on ones rod (red heaven + four green earth).', value:9},
+    {msg:'Turn OFF 4 from the ones rod, now value is 5.', value:5},
+    {msg:'Awesome! 9 minus 4 equals 5. Your turn! 🎯', value:5}
+  ],
+  mul:[
+    {msg:'Multiplication is equal groups magic. Example: 3 × 4. ✖️', value:0},
+    {msg:'Start at 0, make one group of 3.', value:3},
+    {msg:'Add three more groups: 6, 9, then 12.', value:12},
+    {msg:'So 3 × 4 = 12. Group magic complete! 🚀', value:12}
+  ],
+  div:[
+    {msg:'Division is fair sharing. Example: 12 ÷ 3. ➗', value:0},
+    {msg:'Start from 12 on the abacus.', value:12},
+    {msg:'Share 3 each time: 9, 6, 3, 0 (four shares).', value:0},
+    {msg:'Four equal shares means 12 ÷ 3 = 4. Nice! 🏆', value:4}
+  ]
+};
+const LEVEL_TUTORIALS={
+  add:{
+    1:[
+      {msg:'Level 1 demo! Let us solve 4 + 2 step by step. 👀', sequence:[0], stepDelay:260},
+      {msg:'Step 1: We select 4 with four green earth beads on ones rod. Watch the value grow!', sequence:[1,2,3,4], stepDelay:380},
+      {msg:'Step 2: Big Friend Rule! We need 2 more, so we call the King heaven bead to jump to 5.', sequence:[5], stepDelay:520, focusRods:[ROD_IDX_ONES], trade:true},
+      {msg:'Now add 1 more earth friend. Happy Swap complete: 5 + 1 = 6! 🎉', sequence:[6], stepDelay:520, focusRods:[ROD_IDX_ONES], trade:true}
+    ],
+    2:[
+      {msg:'Level 2 carry demo: 8 + 7. Ready for a Happy Swap? 🚀', sequence:[0,8], stepDelay:420, focusRods:[ROD_IDX_ONES]},
+      {msg:'Add 2 first to reach 10. Big Friend trade: 10 ones become 1 ten.', sequence:[10], stepDelay:620, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Now add the remaining 5 with the King heaven bead on ones.', sequence:[15], stepDelay:620, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Now we read 1 ten and 5 ones. That is 15! ✨', sequence:[15], stepDelay:480}
+    ],
+    3:[
+      {msg:'Level 3 demo: 27 + 8.', sequence:[0,27], stepDelay:430, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES]},
+      {msg:'Ones has 7. Add 3 to reach 30 — Happy Swap moves to tens.', sequence:[30], stepDelay:620, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Add remaining 5 with Big Friend on ones. Now 35.', sequence:[35], stepDelay:620, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Result is 35. Carry makes big sums easy! 🧠', sequence:[35], stepDelay:460}
+    ],
+    4:[
+      {msg:'Level 4 demo: 38 + 27.', sequence:[0,38], stepDelay:430},
+      {msg:'Add 20 first: 38 becomes 58 (tens rod grows).', sequence:[58], stepDelay:620, focusRods:[ROD_IDX_TENS]},
+      {msg:'Now add 7 on ones. Add 2 to reach 60, then Big Friend adds remaining 5.', sequence:[60,65], stepDelay:620, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Final answer is 65. Great advanced addition! ⭐', sequence:[65], stepDelay:460}
+    ]
+  },
+  sub:{
+    1:[
+      {msg:'Level 1 subtraction demo: 9 − 3.', sequence:[0,9], stepDelay:430},
+      {msg:'Turn OFF three ones beads. 9 becomes 6.', sequence:[8,7,6], stepDelay:420},
+      {msg:'Answer is 6. Nice and clean subtraction! ✅', sequence:[6], stepDelay:420}
+    ],
+    2:[
+      {msg:'Level 2 Secret Trade demo: 12 − 5.', sequence:[0,12], stepDelay:430, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES]},
+      {msg:'Ones has only 2. Secret Trade: one ten becomes 10 ones (Happy Swap).', sequence:[12], stepDelay:540, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Now remove 5 from 12 ones: 12 → 7.', sequence:[11,10,9,8,7], stepDelay:470, focusRods:[ROD_IDX_ONES], trade:true},
+      {msg:'Answer is 7. Like 5 fingers minus 2 = 3, swaps show the why! 🎯', sequence:[7], stepDelay:460}
+    ],
+    3:[
+      {msg:'Level 3 demo: 64 − 19.', sequence:[0,64], stepDelay:430},
+      {msg:'Subtract 10 first: 64 becomes 54.', sequence:[54], stepDelay:620, focusRods:[ROD_IDX_TENS]},
+      {msg:'Now subtract 9 from 54. Ones has 4, so Secret Trade from tens.', sequence:[45], stepDelay:700, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Answer is 45. Awesome control! 🌟', sequence:[45], stepDelay:460}
+    ],
+    4:[
+      {msg:'Level 4 demo: 83 − 47.', sequence:[0,83], stepDelay:430},
+      {msg:'Subtract 40 first: 83 becomes 43.', sequence:[43], stepDelay:620, focusRods:[ROD_IDX_TENS]},
+      {msg:'Now subtract 7. Ones has 3, so Secret Trade from tens and finish at 36.', sequence:[36], stepDelay:700, focusRods:[ROD_IDX_TENS,ROD_IDX_ONES], trade:true},
+      {msg:'Final answer is 36. Super subtraction power! 💪', sequence:[36], stepDelay:460}
+    ]
+  },
+  mul:{
+    1:[
+      {msg:'Level 1 magic demo: 3 × 2 means two equal groups of 3. ✨', sequence:[0,3,6], stepDelay:520},
+      {msg:'Why it works: 3 + 3 = 6, like two hands of 3 fingers. 🖐️', sequence:[6], stepDelay:430}
+    ],
+    2:[
+      {msg:'Level 2 demo: 4 × 3 is jump-counting by 4. Ready? 🚀', sequence:[0,4,8,12], stepDelay:540},
+      {msg:'Three jumps of 4 land on 12. Equal groups make math easy! 🌈', sequence:[12], stepDelay:430}
+    ],
+    3:[
+      {msg:'Level 3 demo: 5 × 4 means four jumps of 5.', sequence:[0,5,10,15,20], stepDelay:560},
+      {msg:'We reach 20. Big jumps fill tens faster! 🔟', sequence:[20], stepDelay:430}
+    ],
+    4:[
+      {msg:'Level 4 demo: 6 × 4 with strong skip-count jumps.', sequence:[0,6,12,18,24], stepDelay:560},
+      {msg:'Final is 24. Group magic complete! 🏆', sequence:[24], stepDelay:430}
+    ]
+  },
+  div:{
+    1:[
+      {msg:'Level 1 sharing demo: 8 ÷ 2 means make equal shares of 2. 🎁', sequence:[8,6,4,2,0], stepDelay:520},
+      {msg:'We made 4 equal shares, so answer is 4. ➗', sequence:[0], stepDelay:430}
+    ],
+    2:[
+      {msg:'Level 2 demo: 12 ÷ 3 is fair sharing by 3 each time.', sequence:[12,9,6,3,0], stepDelay:540},
+      {msg:'Four shares made. So 12 ÷ 3 = 4. 🌈', sequence:[0], stepDelay:430}
+    ],
+    3:[
+      {msg:'Level 3 demo: 20 ÷ 4 means remove 4 each share.', sequence:[20,16,12,8,4,0], stepDelay:560},
+      {msg:'Five equal shares, so answer is 5. 👏', sequence:[0], stepDelay:430}
+    ],
+    4:[
+      {msg:'Level 4 demo: 24 ÷ 6 with equal-share steps.', sequence:[24,18,12,6,0], stepDelay:560},
+      {msg:'Four equal shares, so 24 ÷ 6 = 4. Division master move! 🧩', sequence:[0], stepDelay:430}
+    ]
+  }
+};
+
+function saveKidState(){
+  localStorage.setItem('beginnerMode',beginnerMode);
+  localStorage.setItem('unlockedLessons',JSON.stringify(unlockedLessons));
+  localStorage.setItem('lessonWins',JSON.stringify(lessonWins));
+  localStorage.setItem('badges',JSON.stringify(badges));
+  localStorage.setItem('onboardingDone',onboardingDone);
+  localStorage.setItem('lessonTutorialSeen',JSON.stringify(lessonTutorialSeen));
+  localStorage.setItem('levelTutorialSeen',JSON.stringify(levelTutorialSeen));
+}
+
+function isUnlocked(lesson){
+  if(!beginnerMode) return true;
+  return unlockedLessons.includes(lesson);
+}
+
+function unlockLesson(lesson){
+  if(!unlockedLessons.includes(lesson)){ unlockedLessons.push(lesson); saveKidState(); }
+}
+
+function evaluateUnlocks(){
+  if(!beginnerMode) return;
+  if((lessonWins.add||0) >= 2) unlockLesson('sub');
+  if((lessonWins.sub||0) >= 2) unlockLesson('mul');
+  if((lessonWins.mul||0) >= 2) unlockLesson('div');
+  applyLessonLocks();
+}
+
+function updateJourney(){
+  const unlocked=beginnerMode ? unlockedLessons.length : ALL_LESSONS.length;
+  const total=ALL_LESSONS.length;
+  const pct=Math.max(4,Math.min(100,Math.round((unlocked/total)*100)));
+  const fill=document.getElementById('progFill');
+  const lbl=document.getElementById('journeyLbl');
+  if(fill) fill.style.width=pct+'%';
+  if(lbl) lbl.textContent=`Journey: ${unlocked}/${total} lessons unlocked`;
+}
+
+function renderBadges(newId){
+  const row=document.getElementById('badgeRow');
+  if(!row) return;
+  row.innerHTML='';
+  if(!badges.length){
+    row.innerHTML='<span class=\"badge-chip\">🎁 Earn your first badge!</span>';
+    return;
+  }
+  badges.forEach(id=>{
+    const b=BADGE_INFO[id]; if(!b) return;
+    const el=document.createElement('span');
+    el.className='badge-chip'+(id===newId?' new':'');
+    el.textContent=`${b.emoji} ${b.label}`;
+    row.appendChild(el);
+  });
+}
+
+function awardBadge(id){
+  if(badges.includes(id)) return;
+  badges.push(id);
+  saveKidState();
+  renderBadges(id);
+  confetti();
+}
+
+function applyLessonLocks(){
+  const beginnerBtn=document.getElementById('beginnerBtn');
+  if(beginnerBtn){
+    beginnerBtn.textContent=beginnerMode?'👶 Beginner ON':'🧠 Beginner OFF';
+    beginnerBtn.classList.toggle('active',beginnerMode);
+  }
+  ALL_LESSONS.forEach(k=>{
+    const lbtn=document.getElementById('btn-'+k);
+    if(lbtn){
+      const locked=!isUnlocked(k);
+      lbtn.classList.toggle('locked',locked);
+      lbtn.title=locked?'🔒 Finish earlier lessons to unlock':''; 
+    }
+    if(k!=='intro'){
+      const tbtn=document.getElementById('tab-'+k);
+      if(tbtn){
+        const locked=!isUnlocked(k);
+        tbtn.classList.toggle('locked',locked);
+        tbtn.title=locked?'🔒 Finish earlier lessons to unlock':''; 
+      }
+    }
+  });
+  updateJourney();
+}
+
+function toggleBeginnerMode(){
+  beginnerMode=!beginnerMode;
+  if(!beginnerMode){ unlockedLessons=[...ALL_LESSONS]; }
+  if(beginnerMode && !unlockedLessons.length){ unlockedLessons=[...ALL_LESSONS]; }
+  saveKidState();
+  applyLessonLocks();
+}
+
+function challengeReady(){
+  let greens=0;
+  for(let r=0;r<RODS;r++) greens += beads[r].e.filter(Boolean).length;
+  return greens>=2;
+}
+
+function renderOnboarding(){
+  const step=ONBOARD_STEPS[onboardingStep];
+  if(!step) return;
+  const next=document.getElementById('onbNextBtn');
+  document.getElementById('onbStep').textContent=`Step ${onboardingStep+1}/${ONBOARD_STEPS.length}`;
+  document.getElementById('onbTitle').textContent=avatarText(step.title);
+  document.getElementById('onbText').textContent=avatarText(step.text);
+  document.getElementById('onbTip').textContent=avatarText(step.tip);
+  next.textContent=onboardingStep===ONBOARD_STEPS.length-1?'Finish':'Next';
+  next.disabled=!!step.needsChallenge && !challengeReady();
+}
+
+function startOnboarding(force=false){
+  if(onboardingDone && !force) return;
+  onboardingActive=true;
+  onboardingStep=0;
+  document.getElementById('onboard').classList.add('active');
+  initBeads();renderAbacus();
+  renderOnboarding();
+}
+
+function nextOnboarding(){
+  if(onboardingStep<ONBOARD_STEPS.length-1){
+    onboardingStep++;
+    renderOnboarding();
+    return;
+  }
+  onboardingDone=true;
+  onboardingActive=false;
+  document.getElementById('onboard').classList.remove('active');
+  awardBadge('color_explorer');
+  addScore(8,{countStreak:false});
+  streamAI('Celebrate the child for finishing the tutorial in 2 very short happy sentences with emojis!');
+  saveKidState();
+}
+
+function skipOnboarding(){
+  onboardingActive=false;
+  onboardingDone=true;
+  document.getElementById('onboard').classList.remove('active');
+  saveKidState();
+}
+
+function setLessonDemoState(active,msg=''){
+  lessonDemoActive=active;
+  const skipBtn=document.getElementById('skipLessonDemoBtn');
+  const note=document.getElementById('demoNote');
+  if(skipBtn) skipBtn.style.display=active?'':'none';
+  if(note) note.textContent=msg || (active?'🎬 AI demo running...':'');
+  document.body.classList.toggle('demo-lock',active);
+}
+function showDemoSpeech(txt){
+  const speech=document.getElementById('tutor-speech');
+  const msg=avatarText(txt);
+  if(speech) speech.innerHTML=msg;
+  speak(msg);
+}
+function waitMs(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function setDemoFocusRods(rods){
+  const arr=(rods||[]).filter(r=>Number.isInteger(r)&&r>=0&&r<RODS);
+  demoFocusRods=new Set(arr);
+  renderAbacus();
+}
+function setDemoTradePulse(on){
+  demoTradePulse=!!on;
+  renderAbacus();
+}
+function clearDemoFocusRods(){
+  if(!demoFocusRods.size && !demoTradePulse) return;
+  demoFocusRods.clear();
+  demoTradePulse=false;
+  renderAbacus();
+}
+function pulseAbaValue(){
+  const el=document.getElementById('abaVal');
+  if(!el) return;
+  el.classList.remove('pop');
+  void el.offsetWidth;
+  el.classList.add('pop');
+}
+async function animateDemoValues(values,delay,token,lesson){
+  for(const v of values){
+    if(token!==lessonDemoToken || currentLesson!==lesson) return false;
+    setNum(v);
+    pulseAbaValue();
+    await waitMs(delay || 420);
+  }
+  return true;
+}
+async function playLessonTutorial(lesson,{manual=false}={}){
+  const steps=LESSON_TUTORIALS[lesson];
+  if(!steps || !steps.length) return;
+  const token=++lessonDemoToken;
+  lessonDemoLesson=lesson;
+  if(demoAutoLaunchTimer){ clearTimeout(demoAutoLaunchTimer); demoAutoLaunchTimer=null; }
+  lessonTutorialSeen[lesson]=true;
+  saveKidState();
+  setLessonDemoState(true, manual?`🎬 Replaying ${lesson} demo...`:`🎬 First-time ${lesson} demo...`);
+  initBeads(); renderAbacus();
+  for(const step of steps){
+    if(token!==lessonDemoToken || currentLesson!==lesson) return;
+    setDemoFocusRods(step.focusRods || []);
+    setDemoTradePulse(!!step.trade);
+    if(Array.isArray(step.sequence)){
+      const ok=await animateDemoValues(step.sequence,step.stepDelay||420,token,lesson);
+      if(!ok) return;
+    } else if(typeof step.value==='number'){
+      setNum(step.value);
+      pulseAbaValue();
+    }
+    showDemoSpeech(step.msg);
+    await waitMs(step.delay || 1800);
+  }
+  if(token!==lessonDemoToken) return;
+  clearDemoFocusRods();
+  setLessonDemoState(false,'✅ Demo done! Now it is your turn.');
+  setTimeout(()=>{ if(!lessonDemoActive){ const n=document.getElementById('demoNote'); if(n) n.textContent=''; } },1700);
+}
+function skipLessonTutorial(){
+  if(!lessonDemoActive) return;
+  lessonDemoToken++;
+  clearDemoFocusRods();
+  setLessonDemoState(false,'⏭ Demo skipped. You can replay anytime.');
+}
+function replayLessonTutorial(){
+  if(!LESSON_TUTORIALS[currentLesson]) return;
+  if(lessonDemoActive) skipLessonTutorial();
+  playLessonTutorial(currentLesson,{manual:true});
+}
+function levelTutorialKey(op,lvl){ return `${op}_lv${lvl}`; }
+function getLevelTutorial(op,lvl){
+  return LEVEL_TUTORIALS?.[op]?.[lvl] || null;
+}
+async function playLevelTutorial(op,lvl,{manual=false}={}){
+  const steps=getLevelTutorial(op,lvl);
+  if(!steps || !steps.length) return;
+  const token=++lessonDemoToken;
+  if(demoAutoLaunchTimer){ clearTimeout(demoAutoLaunchTimer); demoAutoLaunchTimer=null; }
+  setLessonDemoState(true, manual?`🎬 Replaying ${op} level ${lvl} demo...`:`🎬 First-time ${op} level ${lvl} demo...`);
+  initBeads(); renderAbacus();
+  for(const step of steps){
+    if(token!==lessonDemoToken || currentLesson!==op) return;
+    setDemoFocusRods(step.focusRods || []);
+    setDemoTradePulse(!!step.trade);
+    showDemoSpeech(step.msg);
+    if(Array.isArray(step.sequence)){
+      const ok=await animateDemoValues(step.sequence,step.stepDelay||420,token,op);
+      if(!ok) return;
+    } else if(typeof step.value==='number'){
+      setNum(step.value);
+      pulseAbaValue();
+    }
+    await waitMs(step.delay || 800);
+  }
+  if(token!==lessonDemoToken || currentLesson!==op) return;
+  clearDemoFocusRods();
+  setNum(0);
+  pulseAbaValue();
+  setLessonDemoState(false,'✅ Level demo done! Now you try this level.');
+  setTimeout(()=>{ if(!lessonDemoActive){ const n=document.getElementById('demoNote'); if(n) n.textContent=''; } },1700);
+  if(quizState && quizState.op===op && quizState.level===lvl && !quizState.completed){
+    askStepGuidance();
+  }
+}
+
+function setLesson(name){
+  if(!isUnlocked(name)){
+    streamAI('Amazing effort! 🌟 Finish the earlier lesson and this one unlocks soon! 🔓');
+    return;
+  }
+  if(lessonDemoActive) skipLessonTutorial();
+  currentLesson=name;
+  document.querySelectorAll('.lesson-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+name).classList.add('active');
+  buildPractice(name);
+  updateDots(name);
+  const prompts={
+    intro:   'Warmly greet the child and explain that beads use colors: blue/orange OFF and green/red ON. 2 short sentences only.',
+    represent:'Explain showing numbers with color taps in 2 sentences. Use 7 as: red heaven + two green earth beads.',
+    add:     'Explain addition in 2 short sentences: start number then turn ON more beads. Use 3+4=7 example.',
+    sub:     'Explain subtraction in 2 short sentences: start number then turn OFF beads. Use 9−4=5 example.',
+    mul:     'Explain multiplication as equal groups and repeated addition. Use 3×4 as 3+3+3+3 with one tiny why line (like groups of fingers). Keep it magical and 2 short sentences.',
+    div:     'Explain division as fair sharing and repeated subtraction. Use 12÷3 as sharing into equal groups, with one tiny why line. Keep it magical and 2 short sentences.'
+  };
+  streamAI(prompts[name]||'Say something encouraging to the child!');
+  initAudio();playClick();
+  if(demoAutoLaunchTimer){ clearTimeout(demoAutoLaunchTimer); demoAutoLaunchTimer=null; }
+  if(LESSON_TUTORIALS[name] && !lessonTutorialSeen[name]){
+    demoAutoLaunchTimer=setTimeout(()=>{ if(currentLesson===name && !lessonDemoActive) playLessonTutorial(name); },550);
+  }
+}
+
+function setMode(m){
+  if(!isUnlocked(m==='represent'?'represent':m)){
+    streamAI('You are doing great! 🌈 This mode unlocks after the previous milestone.');
+    return;
+  }
+  currentMode=m;
+  document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+m).classList.add('active');
+  setLesson(m==='represent'?'represent':m);
+}
+
+const STEPS=['intro','represent','add','sub','mul','div'];
+function updateDots(cur){
+  const el=document.getElementById('stepDots');
+  el.innerHTML='';
+  STEPS.forEach((s,i)=>{
+    const d=document.createElement('div');
+    const idx=STEPS.indexOf(cur);
+    d.className='sd'+(i<idx?' done':i===idx?' cur':'');
+    d.title=s;d.onclick=()=>setLesson(s);
+    el.appendChild(d);
+  });
+}
+
+/* ══════════════════════════════════════════
+   PRACTICE
+══════════════════════════════════════════ */
+function buildPractice(name){
+  const area=document.getElementById('pracContent');
+  const title=document.getElementById('pracTitle');
+  document.getElementById('targetWrap').style.display='none';
+  document.getElementById('targetDiv').style.display='none';
+
+  // Reset guided-quiz state when entering non-op lessons
+  if(name==='intro' || name==='represent'){
+    quizState = {};
+  }
+
+  if(name==='intro'){
+    title.textContent='🧮 Explore the Abacus!';
+    area.innerHTML=`
+      <div style="background:linear-gradient(135deg,#f5f3ff,#ede9fe);border-radius:14px;padding:13px;border:2px solid #c4b5fd;text-align:center;">
+        <p style="font-weight:700;color:#6d28d9;margin-bottom:10px;font-size:.92rem;">
+          👆 Tap beads to change colors and see value change!<br>
+          <span style="color:#b45309">🟡 Top beads = 5</span> &nbsp;|&nbsp;
+          <span style="color:#1d4ed8">🔵 Bottom beads = 1</span>
+        </p>
+        <div style="display:flex;gap:7px;justify-content:center;flex-wrap:wrap;">
+          <button class="show-btn" onclick="resetAba()">🔄 Reset</button>
+          <button class="show-btn" style="background:#22c55e" onclick="demoNum(37)">▶ Show 37</button>
+          <button class="show-btn" style="background:#f59e0b" onclick="demoNum(256)">▶ Show 256</button>
+          <button class="show-btn" style="background:#ec4899" onclick="aiExplainCur()">🤖 AI Explain!</button>
+        </div>
+        <div id="introFb" style="margin-top:9px"></div>
+      </div>`;
+    initBeads();renderAbacus();return;
+  }
+
+  if(name==='represent'){
+    title.textContent='🔢 Show Me a Number!';
+    area.innerHTML=`
+      <div class="num-row">
+        <input class="num-inp" type="number" id="numInp" placeholder="e.g. 347" min="0" max="99999999">
+        <button class="show-btn" onclick="doShowNum()">Show Me! 🪄</button>
+        <button class="show-btn" style="background:#22c55e" onclick="repQuiz()">🎮 Quiz!</button>
+      </div>
+      <div id="numHint" style="text-align:center;margin-top:8px;font-weight:700;color:var(--purple);font-size:.88rem"></div>
+      <div id="repFb" style="margin-top:7px"></div>`;
+    initBeads();renderAbacus();return;
+  }
+
+  genQuiz(name);
+}
+
+async function demoNum(n){
+  setNum(n);
+  streamAI(`The abacus now shows ${n}. Explain in 2 short sentences which beads are active and their place values. Use the heaven/earth system. Be excited!`);
+}
+
+async function aiExplainCur(){
+  const v=totalVal();
+  const el=document.getElementById('introFb');
+  el.innerHTML='<div class="ai-loader"><div class="ai-spin"></div> Professor Abby is thinking...</div>';
+  const txt=await quietAI(`Abacus shows ${v}. In 2-3 kid-friendly sentences explain how to read this value from the beads. Mention which rods and bead types are used.`);
+  el.innerHTML=txt?`<div class="fb ai">🦉 ${txt.replace(/\n/g,'<br>')}</div>`:'';
+}
+
+function doShowNum(){
+  const v=parseInt(document.getElementById('numInp').value);
+  if(isNaN(v)||v<0){document.getElementById('numHint').textContent='⚠️ Enter a positive number!';return;}
+  if(v>99999999){document.getElementById('numHint').textContent='⚠️ Max 8 digits!';return;}
+  setNum(v);
+  const places=['hundred millions','ten millions','millions','hundred thousands','ten thousands','thousands','hundreds','tens','ones'];
+  const s=v.toString();const start=places.length-s.length;
+  let exp=`✅ ${v.toLocaleString()} shown! `;
+  for(let i=0;i<s.length;i++) if(s[i]!=='0') exp+=`${s[i]} in ${places[start+i]}, `;
+  document.getElementById('numHint').textContent=exp.replace(/,\s*$/,'!');
+  tone(523,'triangle',.15,.1);confetti();
+  awardBadge('number_builder');
+  streamAI(`I just showed ${v} on the abacus! Say something fun and encouraging about this number in 1-2 sentences!`);
+}
+
+/* ══════════════════════════════════════════
+   REPRESENT QUIZ
+══════════════════════════════════════════ */
+function repQuiz(){
+  const n=Math.floor(Math.random()*9900)+100;
+  document.getElementById('targetWrap').style.display='';
+  document.getElementById('targetDiv').style.display='';
+  document.getElementById('targetVal').textContent=n.toLocaleString();
+  document.getElementById('repFb').innerHTML=`
+    <div class="quiz-box">
+      <div class="quiz-q">Show <span style="color:var(--purple)">${n.toLocaleString()}</span></div>
+      <div class="quiz-sub">Tap beads to set colors for this number, then click Check!</div>
+      <div class="quiz-btns">
+        <button class="q-btn chk" onclick="checkRep(${n})">✅ Check</button>
+        <button class="q-btn hnt" onclick="hintRep(${n})">💡 Hint</button>
+        <button class="q-btn ai"  onclick="aiRepHint(${n})">🤖 AI Help</button>
+        <button class="q-btn nxt" onclick="repQuiz()">⏭ Next</button>
+      </div>
+      <div id="repChkRes"></div>
+    </div>`;
+  initBeads();renderAbacus();
+}
+
+function hintRep(n){setNum(n);document.getElementById('repChkRes').innerHTML=`<div class="fb ht">💡 Here's the answer! Study the bead positions! 🔍</div>`;}
+
+async function aiRepHint(n){
+  const el=document.getElementById('repChkRes');
+  el.innerHTML='<div class="ai-loader"><div class="ai-spin"></div> Getting AI hint...</div>';
+  const txt=await quietAI(`Child needs to show ${n} on a 17-rod abacus. Give 3 quick bullet-point steps using simple words and emojis. Focus on which rods and how many heaven/earth beads.`);
+  el.innerHTML=txt?`<div class="fb ai">🦉 ${txt.replace(/\n/g,'<br>')}</div>`:'';
+}
+
+function checkRep(expected){
+  const got=totalVal();
+  qCount++;document.getElementById('qCount').textContent=qCount;
+  const el=document.getElementById('repChkRes');
+  if(got===expected){
+    el.innerHTML=`<div class="fb ok">🎉 Perfect! ${expected.toLocaleString()} is correct! ⭐</div>`;
+    addScore(10);playOK();confetti();
+    lessonWins.represent=(lessonWins.represent||0)+1;
+    evaluateUnlocks();
+    saveKidState();
+    streamAI(`Child correctly showed ${expected} on abacus! Celebrate with 1-2 enthusiastic sentences and share a fun fact about this number!`);
+  } else {
+    el.innerHTML=`<div class="fb ng">❌ Abacus shows ${got.toLocaleString()}, target is ${expected.toLocaleString()}. Try again! 💪</div>`;
+    playNG();streak=0;updStreak();
+    streamAI(`Child tried to show ${expected} but got ${got}. In 2 kind sentences, explain the mistake and encourage them to try again. Keep it simple!`);
+  }
+}
+
+/* ══════════════════════════════════════════
+   STEP-BY-STEP GUIDED OPERATION QUIZ
+   → The child manipulates beads themselves; we validate each
+      intermediate value and ask Mistral to coach the next step,
+      including carry/borrow explanations when needed.
+══════════════════════════════════════════ */
+function rnd(lo,hi){return Math.floor(Math.random()*(hi-lo+1))+lo;}
+
+function makeSteps(op,a,b,ans){
+  if(op==='add' || op==='sub') return [a, ans];
+  if(op==='mul'){
+    const arr=[];
+    for(let i=1;i<=b;i++) arr.push(a*i);
+    return arr;
+  }
+  // div: show a, then subtract b until we reach 0
+  const arr=[a];
+  let cur=a, n=0;
+  while(cur>0 && n<25){
+    cur=Math.max(0,cur-b);
+    arr.push(cur);
+    n++;
+    if(cur===0) break;
+  }
+  return arr;
+}
+
+function stepLabel(s){
+  const total=s.steps.length;
+  if(s.op==='add') return s.step===1 ? `Step 1/${total}: Show ${s.a} on the abacus` : `Step 2/${total}: Add ${s.b}`;
+  if(s.op==='sub') return s.step===1 ? `Step 1/${total}: Show ${s.a} on the abacus` : `Step 2/${total}: Subtract ${s.b}`;
+  if(s.op==='mul') return `Step ${s.step}/${total}: Add ${s.a} (running total: ${s.a*s.step})`;
+  return s.step===1 ? `Step 1/${total}: Show ${s.a} on the abacus` : `Step ${s.step}/${total}: Subtract ${s.b} (count: ${s.step-1})`;
+}
+
+function genQuiz(op){
+  const area=document.getElementById('pracContent');
+  const title=document.getElementById('pracTitle');
+  const lvl=opLevel[op]||1;
+  let a,b,ans;
+
+  if(op==='add'){
+    if(lvl===1){            // single-digit, sum ≤9, no carry. 🌱 beginner
+      a=rnd(1,4); b=rnd(1, Math.max(1, 9-a));
+    } else if(lvl===2){     // single-digit forced CARRY (sum 10–18)
+      a=rnd(5,9); b=rnd(Math.max(1,10-a), 9);
+    } else if(lvl===3){     // 2-digit + 1-digit
+      a=rnd(10,49); b=rnd(1,9);
+    } else {                // 2-digit + 2-digit
+      a=rnd(10,49); b=rnd(10,49);
+    }
+    ans=a+b;
+  } else if(op==='sub'){
+    if(lvl===1){            // simple, no borrow
+      a=rnd(2,9); b=rnd(1,a-1);
+    } else if(lvl===2){     // 2-digit minus 1-digit, may BORROW
+      a=rnd(11,19); b=rnd(2,9); if(b>=a) b=a-1;
+    } else {
+      a=rnd(20,99); b=rnd(1,a-1);
+    }
+    ans=a-b;
+  } else if(op==='mul'){
+    const cap=Math.min(5, 1+lvl);
+    a=rnd(2, cap); b=rnd(2, cap); ans=a*b;
+  } else { // div
+    const cap=Math.min(5, 1+lvl);
+    b=rnd(2, cap); ans=rnd(2, cap); a=b*ans;
+  }
+
+  const steps=makeSteps(op,a,b,ans);
+  quizState={op,a,b,ans,level:lvl,step:1,steps,expected:steps[0],completed:false};
+
+  // Always start with an empty abacus—the child shows the first number themselves.
+  initBeads(); renderAbacus();
+
+  document.getElementById('targetWrap').style.display='';
+  document.getElementById('targetDiv').style.display='';
+  document.getElementById('targetVal').textContent=steps[0].toLocaleString();
+
+  title.textContent=({
+    add:`➕ Addition (Lv ${lvl})`,
+    sub:`➖ Subtraction (Lv ${lvl})`,
+    mul:`✖️ Multiplication (Lv ${lvl})`,
+    div:`➗ Division (Lv ${lvl})`
+  })[op];
+
+  area.innerHTML=`
+    <div class="quiz-box">
+      <div class="quiz-q">${a} ${sym(op)} ${b} = ?</div>
+      <div class="quiz-sub" id="stepLabel">${stepLabel(quizState)}</div>
+      <div id="opFb" style="margin-top:8px"></div>
+      <div class="quiz-btns">
+        <button class="q-btn hnt" onclick="staticHint()">💡 Hint</button>
+        <button class="q-btn ai"  onclick="aiOpHint()">🤖 AI Help</button>
+        <button class="q-btn nxt" onclick="genQuiz('${op}')">⏭ New Problem</button>
+      </div>
+      <div class="log-list" id="logList"></div>
+    </div>`;
+  const shouldAutoLevelDemo = !!lessonTutorialSeen[op] && !lessonDemoActive && !!getLevelTutorial(op,lvl) && !levelTutorialSeen[levelTutorialKey(op,lvl)];
+  if(shouldAutoLevelDemo){
+    levelTutorialSeen[levelTutorialKey(op,lvl)] = true;
+    saveKidState();
+    demoAutoLaunchTimer=setTimeout(()=>{
+      if(currentLesson===op && !lessonDemoActive && quizState?.op===op && quizState?.level===lvl){
+        playLevelTutorial(op,lvl);
+      }
+    }, 600);
+    return;
+  }
+  askStepGuidance();
+}
+
+function onAbacusChange(){
+  if(lessonDemoActive) return;
+  if(!quizState || quizState.completed) return;
+  if(typeof quizState.expected !== 'number') return;
+  if(totalVal() === quizState.expected) handleStepComplete();
+}
+
+function handleStepComplete(){
+  const fb=document.getElementById('opFb');
+  const s=quizState;
+  if(s.step < s.steps.length){
+    s.step++;
+    s.expected=s.steps[s.step-1];
+    document.getElementById('targetVal').textContent=s.expected.toLocaleString();
+    const lbl=document.getElementById('stepLabel');
+    if(lbl) lbl.textContent=stepLabel(s);
+    if(fb) fb.innerHTML=`<div class="fb ok">✅ Step ${s.step-1} done! Moving on to step ${s.step}… 🎯</div>`;
+    addScore(2,{countStreak:false});
+    playOK();
+    askStepGuidance();
+  } else {
+    s.completed=true;
+    if(fb) fb.innerHTML=`<div class="fb ok">🎉🎉 BRILLIANT! ${s.a} ${sym(s.op)} ${s.b} = ${s.ans}! ⭐⭐⭐</div>`;
+    document.getElementById('targetVal').textContent=s.ans.toLocaleString();
+    qCount++; document.getElementById('qCount').textContent=qCount;
+    addScore(15); playOK(); confetti();
+    lessonWins[s.op]=(lessonWins[s.op]||0)+1;
+    if(s.op==='add' && lessonWins.add>=2) awardBadge('addition_hero');
+    evaluateUnlocks();
+    saveKidState();
+    addLog(true, `${s.a} ${sym(s.op)} ${s.b} = ${s.ans}`);
+    advanceLevel(s.op);
+    streamAI(`The beginner just solved ${s.a} ${opW(s.op)} ${s.b} = ${s.ans} step-by-step on the abacus! Celebrate with 1-2 super excited sentences using emojis. Mention they unlocked level ${opLevel[s.op]} of ${opW(s.op)} and encourage them to keep counting!`);
+  }
+}
+
+function advanceLevel(op){ if(opLevel[op]<4) opLevel[op]++; }
+
+async function askStepGuidance(){
+  const s=quizState;
+  if(!s || !s.op) return;
+  const aOnes = s.a % 10;
+  const aTens = Math.floor(s.a / 10);
+  let task='';
+
+  if(s.op==='add'){
+    if(s.step===1){
+      // Tell the child how to show 'a' on the abacus.
+      if(s.a < 5){
+        task=`We are solving ${s.a} + ${s.b} step-by-step on the abacus.
+STEP 1: tell the BEGINNER kid to show ${s.a} on the rightmost (ones) rod by clicking ${s.a} EARTH bead${s.a===1?'':'s'} (each worth 1).
+Encourage basic counting: 1, 2, 3...
+2-3 short sentences with emojis. Friendly and excited.`;
+      } else if(s.a===5){
+        task=`STEP 1 of ${s.a} + ${s.b}: tell the kid to show 5 by clicking 1 HEAVEN bead (worth 5) on the ones rod.
+Explain: heaven bead = 5, no need for earth beads! 2 short sentences with emojis.`;
+      } else if(s.a < 10){
+        const eb=s.a-5;
+        task=`STEP 1 of ${s.a} + ${s.b}: tell the kid to show ${s.a} on the ones rod.
+Click 1 HEAVEN bead (worth 5) and ${eb} EARTH bead${eb>1?'s':''} (each 1). 5 + ${eb} = ${s.a}.
+Use simple counting words. 2-3 short sentences with emojis.`;
+      } else {
+        task=`STEP 1 of ${s.a} + ${s.b}: tell the kid to show ${s.a} on the abacus using TENS rod = ${aTens} and ONES rod = ${aOnes}.
+Explain heaven (5) + earth (1) for each rod. 3 short sentences with emojis.`;
+      }
+    } else {
+      // STEP 2: add b to current value a
+      const carry = aOnes + s.b > 9;
+      if(!carry){
+        task=`Awesome! Abacus shows ${s.a}. Now STEP 2 of ${s.a} + ${s.b}: add ${s.b} more on the ones rod.
+Tell the kid which beads to click (heaven=5, earth=1). Encourage counting up from ${s.a}: ${s.a}+1, ${s.a}+2... 2-3 short sentences with emojis.`;
+      } else {
+        task=`STEP 2 of ${s.a} + ${s.b} — this is the CARRY trick! 🎓
+The ones rod already has ${aOnes}, and ${aOnes}+${s.b}=${aOnes+s.b} won't fit (a rod can only hold up to 9; only ${9-aOnes} space left).
+Explain to the BEGINNER in 5 SHORT sentences with emojis:
+1) \"Big Friend time! We need a Happy Swap because ones are full. 😮\"
+2) \"10 little friends (ones) trade into 1 ten friend.\"
+3) \"Use fingers why: 10 fingers become 1 bundle of ten.\"
+4) \"Turn ON 1 EARTH bead on the TENS rod (=10), and set ones to ${s.ans%10}.\"
+5) \"Final answer ${s.ans} = ${Math.floor(s.ans/10)} ten + ${s.ans%10} ones 🎉\"
+Also add one tiny analogy with ${avatarAnalogy()}. Keep each sentence short and chant-like.`;
+      }
+    }
+  } else if(s.op==='sub'){
+    if(s.step===1){
+      task=`We're solving ${s.a} − ${s.b} step-by-step.
+STEP 1: tell the kid to show ${s.a} on the abacus${s.a>=10?` (TENS=${aTens}, ONES=${aOnes})`:''}.
+Explain heaven (5) and earth (1) beads. Encourage counting. 2-3 short sentences with emojis.`;
+    } else {
+      const borrow = aOnes < s.b;
+      if(!borrow){
+        task=`Great! Abacus shows ${s.a}. Now STEP 2: subtract ${s.b} — click off ${s.b} bead${s.b===1?'':'s'} from the ones rod (deactivate them).
+Encourage counting down. 2 short sentences with emojis.`;
+      } else {
+        task=`STEP 2 of ${s.a} − ${s.b} — this is the BORROW trick! 🎓
+Ones rod has only ${aOnes}, but we need to take ${s.b} away.
+Explain in 5 SHORT sentences with emojis:
+1) \"Secret Trade time! Not enough ones to remove. 😢\"
+2) \"Big Friend from tens shares 10 little ones.\"
+3) \"Use hand why: if 5 fingers minus 2 = 3, trades keep value fair.\"
+4) \"Now ones has ${aOnes+10}; remove ${s.b}, leaving ${aOnes+10-s.b}.\"
+5) \"Final answer ${s.ans} 🎉\"
+Also add one tiny analogy with ${avatarAnalogy()}. Keep it gentle and rhythmic.`;
+      }
+    }
+  } else if(s.op==='mul'){
+    if(s.step===1){
+      task=`Multiplication = REPEATED ADDITION! ${s.a} × ${s.b} means add ${s.a} to itself ${s.b} times.
+STEP 1 of ${s.b}: add ${s.a} to the EMPTY abacus. Tell which beads (heaven=5, earth=1).
+Explain WHY in one tiny line using ${avatarAnalogy()} (equal groups idea).
+2-3 very short, rhythmic sentences with emojis.`;
+    } else {
+      const before=s.a*(s.step-1);
+      const after=s.a*s.step;
+      task=`Continue! You added ${s.a} ${s.step-1} time${s.step-1===1?'':'s'} (abacus shows ${before}). Now add ${s.a} again to make ${after}.
+${s.step===s.b ? '🎉 This is the FINAL addition!' : `Then ${s.b - s.step} more time${s.b-s.step===1?'':'s'} to go.`}
+Mention if a CARRY/Happy Swap is needed (${(before%10) + (s.a%10) > 9 ? 'YES — Big Friend helps: trade 10 ones for 1 ten' : 'no swap needed'}).
+Add one tiny WHY line with ${avatarAnalogy()}.
+2-3 short chant-like sentences with emojis.`;
+    }
+  } else { // division
+    if(s.step===1){
+      task=`Division = REPEATED SUBTRACTION! ${s.a} ÷ ${s.b}: keep subtracting ${s.b} and count how many times.
+STEP 1: show ${s.a} on the abacus${s.a>=10?` (TENS=${aTens}, ONES=${aOnes})`:''}. Tell which beads. 2-3 short sentences with emojis.`;
+    } else {
+      const before=s.steps[s.step-2];
+      const after=s.steps[s.step-1];
+      const isLast=after===0;
+      task=`Subtract ${s.b} again — abacus is at ${before}, will become ${after}.
+You've done ${s.step-2} subtraction${s.step-2===1?'':'s'} so far.
+${isLast ? `🎉 This last subtraction reaches 0 — answer is ${s.ans} equal shares!` : `Mention if a BORROW/Secret Trade is needed (${(before%10) < (s.b%10) ? 'YES — Big Friend from tens shares 10 ones' : 'no trade this time'}).`}
+Add one tiny WHY line with ${avatarAnalogy()} about fair sharing.
+2-3 very short, gentle sentences with emojis.`;
+    }
+  }
+
+  if(task) await streamAI(task);
+}
+
+function staticHint(){
+  if(!quizState || !quizState.op){ document.getElementById('opFb').innerHTML=`<div class="fb ht">💡 Click ⏭ for a new problem!</div>`; return; }
+  const s=quizState;
+  const cur=totalVal(), need=s.expected;
+  const curOnes=cur%10;
+  const addOnes=(s.b||0)%10;
+  const subOnes=(s.b||0)%10;
+  let msg;
+  if(s.step===1){
+    const t=Math.floor(s.a/10), o=s.a%10;
+    msg=`Show ${s.a}: ${t>0?`tens rod = ${t}, `:''}ones rod = ${o}. Heaven bead = 5, earth bead = 1.`;
+  } else if(s.op==='add'){
+    const diff=need-cur;
+    if(diff<=0){
+      msg=`Goal ${need}, currently ${cur}. Almost there!`;
+    } else if(curOnes + addOnes >= 10){
+      const removeCount=10-addOnes;
+      const comboNeeded=curOnes < removeCount;
+      msg=`Level 3 Big Friend (Double-Clap Rule): total crosses 10, so carry 1 to tens. Remove ${removeCount} from ones, then +1 to left. ${comboNeeded?`Special Combination: if not enough bottom beads to remove, lift top 5-bead, add ${5-removeCount} bottom beads, then carry 1 left.`:''}`;
+    } else if(curOnes>=5 && curOnes+addOnes<=9 && curOnes+addOnes>5){
+      const removeCount=5-addOnes;
+      msg=`Level 2 Small Friend (High-Five Rule): close ${addOnes} on hand of 5, ${removeCount} stay open. Move ${removeCount} bottom bead${removeCount===1?'':'s'} down, then move top 5-bead down.`;
+    } else {
+      msg=`Level 1 Direct Addition: add ${diff} directly. 1-4 → move bottom beads up, 5 → move top bead down, 6-9 → top down + needed bottom up.`;
+    }
+  } else if(s.op==='sub'){
+    const diff=cur-need;
+    if(diff<=0){
+      msg=`Goal ${need}, currently ${cur}.`;
+    } else if(curOnes < subOnes){
+      const remain=5-subOnes;
+      msg=`Reverse Trick (Subtraction Friend Rule): not enough ones, so borrow/secret trade. Push top 5-bead up and bring ${remain} bottom bead${remain===1?'':'s'} up on ones, then continue subtraction.`;
+    } else {
+      msg=`Direct subtraction: remove ${diff} bead${diff===1?'':'s'} from the current value. If ones are short, borrow 1 from tens and continue.`;
+    }
+  } else if(s.op==='mul'){
+    msg=`Multiplication hint: equal groups. Add ${s.a} once more to reach ${need} (running total).`;
+  } else {
+    msg=`Division hint: fair sharing by repeated subtraction. Subtract ${s.b} to reach ${need}; borrow from tens if ones are short.`;
+  }
+  document.getElementById('opFb').innerHTML=`<div class="fb ht">💡 ${msg}</div>`;
+}
+
+async function aiOpHint(){
+  if(!quizState || !quizState.op) return;
+  const s=quizState;
+  const el=document.getElementById('opFb');
+  el.innerHTML='<div class="ai-loader"><div class="ai-spin"></div> Professor Abby is writing a hint...</div>';
+  const txt=await quietAI(
+    `A young beginner kid is solving ${s.a} ${opW(s.op)} ${s.b} on a 17-rod abacus, step-by-step.
+Current step: ${s.step} of ${s.steps.length}. Abacus currently shows ${totalVal()}, target for THIS step is ${s.expected}.
+Give exactly 3 numbered, SHORT bullet steps (max 14 words each) using simple counting words and emojis.
+Use this order: Rule Name → bead action → tiny WHY.
+Rule naming requirements:
+- For base-5 friend move, write exactly: "High-Five Rule (Small Friend)".
+- For carry/base-10 friend move, write exactly: "Double-Clap Rule (Big Friend)".
+- For easy direct move, write exactly: "Direct Addition Rule".
+- For subtraction borrow/trade, write exactly: "Reverse Friend Borrow Rule".
+Mention heaven (5) and earth (1) beads, and explain CARRY (to tens rod) or BORROW (from tens rod) if needed.`
+  );
+  el.innerHTML=txt?`<div class="fb ai">🦉 ${txt.replace(/\n/g,'<br>')}</div>`:'';
+}
+
+function sym(op){return{add:'+',sub:'−',mul:'×',div:'÷'}[op]||'?';}
+function opW(op){return{add:'plus',sub:'minus',mul:'times',div:'divided by'}[op]||op;}
+
+function addLog(ok,txt){
+  const log=document.getElementById('logList');
+  if(!log) return;
+  const d=document.createElement('div');
+  d.className='log-item '+(ok?'c':'w');
+  d.textContent=(ok?'✅':'❌')+' '+txt;
+  log.prepend(d);
+  while(log.children.length>5) log.removeChild(log.lastChild);
+}
+
+/* ══════════════════════════════════════════
+   SCORE
+══════════════════════════════════════════ */
+function addScore(pts,opts={}){
+  const countStreak=opts.countStreak!==false;
+  score+=pts;
+  if(countStreak) streak++;
+  document.getElementById('scoreLbl').textContent='Score: '+score;
+  updStars();updStreak();updateJourney();
+  if(score>=80) awardBadge('math_champ');
+  if(streak===3)  streamAI('Child got 3 in a row! Give a HUGE celebration in 1 sentence with lots of emojis!');
+  if(streak===5){ awardBadge('streak_star'); streamAI('5 STREAK! This child is amazing! 1 super-enthusiastic sentence of praise!'); }
+  if(streak===10) streamAI('10 IN A ROW! GENIUS! 2 wildly excited sentences and award them Abacus Master title!');
+}
+function updStars(){
+  const s=score>=150?'⭐⭐⭐⭐⭐':score>=100?'⭐⭐⭐⭐':score>=50?'⭐⭐⭐':score>=20?'⭐⭐':'⭐';
+  document.getElementById('stars').textContent=s;
+}
+function updStreak(){
+  document.getElementById('streakBadge').textContent=streak>=3?`🔥 ${streak}x`:'';
+}
+
+/* ══════════════════════════════════════════
+   CONFETTI
+══════════════════════════════════════════ */
+function confetti(){
+  const cols=['#f43f5e','#7c3aed','#22c55e','#f59e0b','#3b82f6','#ec4899','#fbbf24'];
+  for(let i=0;i<50;i++){
+    const c=document.createElement('div');c.className='confetti-piece';
+    c.style.cssText=`left:${Math.random()*100}vw;top:0;
+      background:${cols[Math.floor(Math.random()*cols.length)]};
+      width:${7+Math.random()*11}px;height:${7+Math.random()*11}px;
+      border-radius:${Math.random()>.5?'50%':'3px'};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*.5}s;`;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),3500);
+  }
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+applyAvatar(currentAvatar);
+renderAvatars();
+(function(){
+  const vb=document.getElementById('voiceBtn');
+  if(vb) vb.textContent = voiceOn ? '🎤 Voice ON' : '🔇 Voice OFF';
+})();
+if(!beginnerMode) unlockedLessons=[...ALL_LESSONS];
+if(beginnerMode && !unlockedLessons.length) unlockedLessons=[...ALL_LESSONS];
+renderBadges();
+applyLessonLocks();
+renderAbacus();
+setLesson('intro');
+setTimeout(()=>{
+  const av=currentAvatarObj();
+  streamAI(`Greet the child warmly! Introduce yourself as ${av.name} ${av.emoji}, a live AI abacus tutor. Tell them what they'll learn (addition, subtraction, multiplication, division!) in 2-3 super exciting sentences with emojis. Mention they can ask you anything by typing below!`);
+}, 500);
+setTimeout(()=>{ if(!onboardingDone) startOnboarding(false); }, 850);
+</script>
+</body>
+</html>
