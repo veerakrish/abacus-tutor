@@ -5,7 +5,7 @@ from typing import List, Optional
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, Response
+from fastapi.responses import StreamingResponse, Response, FileResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from tutor_engine import explain_addition
@@ -89,8 +89,9 @@ def _build_payload(req: ChatRequest, stream: bool) -> dict:
 
 
 @app.get("/")
-def home():
-    return {"status": "running"}
+async def serve_home():
+    # This sends the HTML file to the browser
+    return FileResponse("abacus-tutor-ai.html")
 
 
 @app.get("/levels")
